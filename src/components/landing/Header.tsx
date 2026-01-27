@@ -29,6 +29,9 @@ const Header = () => {
           <a href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
             Depoimentos
           </a>
+          <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            FAQ
+          </a>
         </nav>
 
         <div className="flex items-center gap-3">
