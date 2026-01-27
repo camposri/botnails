@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Send, MessageCircle, Mail, User } from "lucide-react";
+import { Send, MessageCircle, Mail, User, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
 const contactSchema = z.object({
@@ -16,10 +17,12 @@ const contactSchema = z.object({
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
+type ContactMethod = "email" | "whatsapp";
 
 const ContactForm = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactMethod, setContactMethod] = useState<ContactMethod>("email");
   const [formData, setFormData] = useState<ContactFormData>({
     name: "",
     email: "",
@@ -31,10 +34,42 @@ const ContactForm = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
     if (errors[name as keyof ContactFormData]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
+  };
+
+  const handleWhatsApp = (validatedData: ContactFormData) => {
+    const whatsappMessage = encodeURIComponent(
+      `*Novo contato via site BotNails*\n\n` +
+      `*Nome:* ${validatedData.name}\n` +
+      `*E-mail:* ${validatedData.email}\n` +
+      `${validatedData.phone ? `*Telefone:* ${validatedData.phone}\n` : ""}` +
+      `\n*Mensagem:*\n${validatedData.message}`
+    );
+
+    const whatsappNumber = "5511999999999"; // Número de contato
+    window.open(`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`, "_blank");
+
+    toast({
+      title: "WhatsApp aberto!",
+      description: "O WhatsApp foi aberto com sua mensagem. Envie para finalizar o contato.",
+    });
+  };
+
+  const handleEmail = async (validatedData: ContactFormData) => {
+    const { error } = await supabase.functions.invoke("send-contact-email", {
+      body: validatedData,
+    });
+
+    if (error) {
+      throw new Error("Erro ao enviar e-mail");
+    }
+
+    toast({
+      title: "Mensagem enviada!",
+      description: "Recebemos sua mensagem e entraremos em contato em breve.",
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,28 +78,14 @@ const ContactForm = () => {
     setErrors({});
 
     try {
-      // Validate form data
       const validatedData = contactSchema.parse(formData);
 
-      // Build WhatsApp message
-      const whatsappMessage = encodeURIComponent(
-        `*Novo contato via site BotNails*\n\n` +
-        `*Nome:* ${validatedData.name}\n` +
-        `*E-mail:* ${validatedData.email}\n` +
-        `${validatedData.phone ? `*Telefone:* ${validatedData.phone}\n` : ""}` +
-        `\n*Mensagem:*\n${validatedData.message}`
-      );
+      if (contactMethod === "whatsapp") {
+        handleWhatsApp(validatedData);
+      } else {
+        await handleEmail(validatedData);
+      }
 
-      // Open WhatsApp with the message (replace with your number)
-      const whatsappNumber = "5511999999999"; // Número de contato
-      window.open(`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`, "_blank");
-
-      toast({
-        title: "Mensagem preparada!",
-        description: "O WhatsApp foi aberto com sua mensagem. Envie para finalizar o contato.",
-      });
-
-      // Reset form
       setFormData({ name: "", email: "", phone: "", message: "" });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -128,6 +149,34 @@ const ContactForm = () => {
                 </div>
               </div>
 
+              {/* Contact Method Toggle */}
+              <div className="flex gap-3 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setContactMethod("email")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 transition-all ${
+                    contactMethod === "email"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50"
+                  }`}
+                >
+                  <Mail className="w-5 h-5" />
+                  <span className="font-medium">E-mail</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContactMethod("whatsapp")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 transition-all ${
+                    contactMethod === "whatsapp"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50"
+                  }`}
+                >
+                  <Phone className="w-5 h-5" />
+                  <span className="font-medium">WhatsApp</span>
+                </button>
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="flex items-center gap-2">
@@ -168,7 +217,7 @@ const ContactForm = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-muted-foreground" />
+                    <Phone className="w-4 h-4 text-muted-foreground" />
                     WhatsApp
                   </Label>
                   <Input
@@ -208,16 +257,23 @@ const ContactForm = () => {
                 >
                   {isSubmitting ? (
                     "Enviando..."
+                  ) : contactMethod === "email" ? (
+                    <>
+                      Enviar por E-mail
+                      <Mail className="ml-2 w-5 h-5" />
+                    </>
                   ) : (
                     <>
-                      Enviar Mensagem
+                      Enviar por WhatsApp
                       <Send className="ml-2 w-5 h-5" />
                     </>
                   )}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
-                  Ao enviar, você será direcionado ao WhatsApp para finalizar o contato
+                  {contactMethod === "email"
+                    ? "Você receberá uma confirmação no seu e-mail"
+                    : "O WhatsApp será aberto com sua mensagem"}
                 </p>
               </form>
             </div>
