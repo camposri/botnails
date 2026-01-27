@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   return (
@@ -35,11 +36,11 @@ const Header = () => {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Button variant="ghost" className="text-foreground hover:text-primary">
-            Entrar
+          <Button variant="ghost" className="text-foreground hover:text-primary" asChild>
+            <Link to="/auth">Entrar</Link>
           </Button>
-          <Button className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg shadow-primary/25">
-            Começar Grátis
+          <Button className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg shadow-primary/25" asChild>
+            <Link to="/auth">Começar Grátis</Link>
           </Button>
         </div>
       </div>
