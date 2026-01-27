@@ -11,6 +11,7 @@ import Clients from "./pages/Clients";
 import Services from "./pages/Services";
 import Appointments from "./pages/Appointments";
 import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
 import PublicBooking from "./pages/PublicBooking";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/dashboard/clients" element={<Clients />} />
             <Route path="/dashboard/services" element={<Services />} />
             <Route path="/dashboard/appointments" element={<Appointments />} />
+            <Route path="/dashboard/reports" element={<Reports />} />
             <Route path="/dashboard/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
