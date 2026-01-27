@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, addMinutes, parseISO, isToday, isTomorrow } from "date-fns";
+import { format, addMinutes, parseISO, isToday, isTomorrow, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Calendar as CalendarIcon,
   Clock,
   Plus,
-  Search,
   ChevronLeft,
   ChevronRight,
   Edit2,
   Trash2,
-  X,
   Check,
+  List,
+  LayoutGrid,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import CalendarView from "@/components/dashboard/CalendarView";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
@@ -94,13 +94,17 @@ const timeSlots = Array.from({ length: 28 }, (_, i) => {
   return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 });
 
+type ViewType = "list" | "calendar";
+
 const Appointments = () => {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [viewType, setViewType] = useState<ViewType>("calendar");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -125,6 +129,7 @@ const Appointments = () => {
   useEffect(() => {
     if (user) {
       fetchData();
+      fetchAllAppointments();
     }
   }, [user]);
 
@@ -176,6 +181,33 @@ const Appointments = () => {
       console.error("Error fetching appointments:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllAppointments = async () => {
+    try {
+      // Fetch appointments for a wider range (current month +/- 2 months)
+      const start = format(startOfMonth(new Date()), "yyyy-MM-dd");
+      const end = format(endOfMonth(new Date(new Date().setMonth(new Date().getMonth() + 2))), "yyyy-MM-dd");
+
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("*")
+        .gte("date", start)
+        .lte("date", end)
+        .order("date")
+        .order("start_time");
+
+      if (error) throw error;
+
+      const typedData = (data || []).map((a) => ({
+        ...a,
+        status: a.status as "pending" | "confirmed" | "completed" | "cancelled",
+      }));
+
+      setAllAppointments(typedData);
+    } catch (error) {
+      console.error("Error fetching all appointments:", error);
     }
   };
 
@@ -280,6 +312,7 @@ const Appointments = () => {
 
       setIsDialogOpen(false);
       fetchAppointments();
+      fetchAllAppointments();
     } catch (error) {
       console.error("Error saving appointment:", error);
       toast({
@@ -310,6 +343,7 @@ const Appointments = () => {
 
       setIsDeleteDialogOpen(false);
       fetchAppointments();
+      fetchAllAppointments();
     } catch (error) {
       console.error("Error deleting appointment:", error);
       toast({
@@ -335,6 +369,7 @@ const Appointments = () => {
       });
 
       fetchAppointments();
+      fetchAllAppointments();
     } catch (error) {
       console.error("Error updating status:", error);
       toast({
@@ -366,7 +401,7 @@ const Appointments = () => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6"
         >
           <div>
             <h1 className="text-3xl font-display font-bold text-foreground mb-2">
@@ -376,159 +411,200 @@ const Appointments = () => {
               Gerencie seus agendamentos
             </p>
           </div>
-          <Button
-            onClick={openNewAppointmentDialog}
-            className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Agendamento
-          </Button>
-        </motion.div>
-
-        {/* Date Navigation */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex items-center justify-between mb-6 p-4 bg-card rounded-2xl border border-border/50"
-        >
-          <Button variant="ghost" size="icon" onClick={() => navigateDate("prev")}>
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" className="flex flex-col items-center gap-0">
-                <span className="text-lg font-semibold capitalize">{formatDateLabel()}</span>
-                <span className="text-sm text-muted-foreground">
-                  {format(selectedDate, "d 'de' MMMM", { locale: ptBR })}
-                </span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-card" align="center">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-
-          <Button variant="ghost" size="icon" onClick={() => navigateDate("next")}>
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-        </motion.div>
-
-        {/* Appointments List */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-card rounded-2xl border border-border/50 overflow-hidden"
-        >
-          {loading ? (
-            <div className="p-8 space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />
-              ))}
-            </div>
-          ) : appointments.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <CalendarIcon className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Nenhum agendamento
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Você não tem agendamentos para esta data
-              </p>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-border overflow-hidden">
               <Button
-                onClick={openNewAppointmentDialog}
-                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
+                variant={viewType === "calendar" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewType("calendar")}
+                className="rounded-none"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Agendamento
+                <LayoutGrid className="w-4 h-4 mr-1" />
+                Calendário
+              </Button>
+              <Button
+                variant={viewType === "list" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewType("list")}
+                className="rounded-none"
+              >
+                <List className="w-4 h-4 mr-1" />
+                Lista
               </Button>
             </div>
-          ) : (
-            <div className="divide-y divide-border">
-              <AnimatePresence>
-                {appointments.map((appointment, index) => (
-                  <motion.div
-                    key={appointment.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="p-4 sm:p-6 hover:bg-muted/30 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="text-center min-w-[60px]">
-                          <div className="text-lg font-semibold text-foreground">
-                            {appointment.start_time.slice(0, 5)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {appointment.end_time.slice(0, 5)}
-                          </div>
-                        </div>
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-semibold">
-                          {appointment.client_name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-foreground">
-                            {appointment.client_name}
-                          </h4>
-                          <p className="text-sm text-muted-foreground">
-                            {appointment.service_name} • R$ {appointment.price.toFixed(2).replace(".", ",")}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={statusConfig[appointment.status].className}>
-                          {statusConfig[appointment.status].label}
-                        </Badge>
-                        
-                        {appointment.status === "pending" && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => updateStatus(appointment, "confirmed")}
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                            title="Confirmar"
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
-                        )}
-                        
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(appointment)}
-                          className="text-muted-foreground hover:text-foreground"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openDeleteDialog(appointment)}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
+            <Button
+              onClick={openNewAppointmentDialog}
+              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Agendamento
+            </Button>
+          </div>
         </motion.div>
+
+        <AnimatePresence mode="wait">
+          {viewType === "calendar" ? (
+            <motion.div
+              key="calendar"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-card rounded-2xl border border-border/50 p-4 md:p-6"
+            >
+              <CalendarView
+                appointments={allAppointments}
+                selectedDate={selectedDate}
+                onDateSelect={(date) => {
+                  setSelectedDate(date);
+                  setViewType("list");
+                }}
+                onAppointmentClick={openEditDialog}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="list"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              {/* Date Navigation */}
+              <div className="flex items-center justify-between mb-6 p-4 bg-card rounded-2xl border border-border/50">
+                <Button variant="ghost" size="icon" onClick={() => navigateDate("prev")}>
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" className="flex flex-col items-center gap-0">
+                      <span className="text-lg font-semibold capitalize">{formatDateLabel()}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {format(selectedDate, "d 'de' MMMM", { locale: ptBR })}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-card" align="center">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => date && setSelectedDate(date)}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <Button variant="ghost" size="icon" onClick={() => navigateDate("next")}>
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </div>
+
+              {/* Appointments List */}
+              <div className="bg-card rounded-2xl border border-border/50 overflow-hidden">
+                {loading ? (
+                  <div className="p-8 space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />
+                    ))}
+                  </div>
+                ) : appointments.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                      <CalendarIcon className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      Nenhum agendamento
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      Você não tem agendamentos para esta data
+                    </p>
+                    <Button
+                      onClick={openNewAppointmentDialog}
+                      className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Criar Agendamento
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    <AnimatePresence>
+                      {appointments.map((appointment, index) => (
+                        <motion.div
+                          key={appointment.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="p-4 sm:p-6 hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="text-center min-w-[60px]">
+                                <div className="text-lg font-semibold text-foreground">
+                                  {appointment.start_time.slice(0, 5)}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {appointment.end_time.slice(0, 5)}
+                                </div>
+                              </div>
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-semibold">
+                                {appointment.client_name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-foreground">
+                                  {appointment.client_name}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {appointment.service_name} • R$ {appointment.price.toFixed(2).replace(".", ",")}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className={statusConfig[appointment.status].className}>
+                                {statusConfig[appointment.status].label}
+                              </Badge>
+                              
+                              {appointment.status === "pending" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => updateStatus(appointment, "confirmed")}
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  title="Confirmar"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </Button>
+                              )}
+                              
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditDialog(appointment)}
+                                className="text-muted-foreground hover:text-foreground"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openDeleteDialog(appointment)}
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Add/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
