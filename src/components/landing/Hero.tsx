@@ -27,7 +27,7 @@ const Hero = () => {
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
               <Sparkles className="w-4 h-4" />
-              30 Dias Grátis para Testar
+              Experimente Sem Compromisso
             </span>
           </motion.div>
 
@@ -62,13 +62,13 @@ const Hero = () => {
             <Button
               size="lg"
               className="group bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground px-8 py-6 text-lg shadow-xl shadow-primary/25 transition-all hover:shadow-2xl hover:shadow-primary/30"
+              onClick={() => document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              Começar Teste Grátis
+              Fale Conosco
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
             <div className="text-sm text-muted-foreground">
-              30 dias grátis, depois apenas{" "}
-              <span className="font-semibold text-foreground">R$ 49,99/mês</span>
+              Conheça nossa solução personalizada
             </div>
           </motion.div>
 

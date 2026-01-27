@@ -26,7 +26,7 @@ const CTA = () => {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
                 <Sparkles className="w-4 h-4" />
-                Comece Agora
+                Ficou Interessado?
               </div>
               
               <h2 className="text-3xl md:text-5xl font-display font-bold mb-4">
@@ -36,15 +36,16 @@ const CTA = () => {
               </h2>
               
               <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8">
-                Junte-se a centenas de profissionais que já transformaram 
-                sua gestão com o BotNails
+                Entre em contato e descubra como podemos 
+                transformar sua gestão
               </p>
               
               <Button
                 size="lg"
                 className="group bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground px-10 py-6 text-lg shadow-xl shadow-primary/25"
+                onClick={() => document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Começar Grátis por 30 Dias
+                Fale Conosco
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </motion.div>
