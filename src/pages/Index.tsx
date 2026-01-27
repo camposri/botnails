@@ -1,7 +1,7 @@
 import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
 import Features from "@/components/landing/Features";
-import Pricing from "@/components/landing/Pricing";
+import ContactForm from "@/components/landing/ContactForm";
 import Testimonials from "@/components/landing/Testimonials";
 import FAQ from "@/components/landing/FAQ";
 import CTA from "@/components/landing/CTA";
@@ -14,7 +14,7 @@ const Index = () => {
       <Hero />
       <Features />
       <Testimonials />
-      <Pricing />
+      <ContactForm />
       <FAQ />
       <CTA />
       <Footer />
@@ -23,3 +23,4 @@ const Index = () => {
 };
 
 export default Index;
+
