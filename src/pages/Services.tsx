@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Plus, Clock, DollarSign, Edit2, Trash2, Scissors, ToggleLeft, ToggleRight } from "lucide-react";
+import { Search, Plus, Clock, DollarSign, Edit2, Trash2, Scissors, ToggleLeft, ToggleRight, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -38,6 +38,39 @@ interface Service {
   created_at: string;
 }
 
+interface ServiceSuggestion {
+  name: string;
+  description: string;
+  duration_minutes: number;
+  price: number;
+  category: "classico" | "tendencia" | "premium";
+}
+
+const serviceSuggestions: ServiceSuggestion[] = [
+  // Clássicos
+  { name: "Manicure Tradicional", description: "Corte, lixamento e esmaltação das unhas das mãos", duration_minutes: 45, price: 35, category: "classico" },
+  { name: "Pedicure Tradicional", description: "Corte, lixamento e esmaltação das unhas dos pés", duration_minutes: 60, price: 45, category: "classico" },
+  { name: "Manicure + Pedicure", description: "Combo completo mãos e pés", duration_minutes: 90, price: 70, category: "classico" },
+  { name: "Cutilagem", description: "Remoção de cutículas com alicate profissional", duration_minutes: 30, price: 25, category: "classico" },
+  { name: "Esmaltação Simples", description: "Aplicação de esmalte comum", duration_minutes: 20, price: 20, category: "classico" },
+  // Tendências
+  { name: "Esmaltação em Gel", description: "Esmalte em gel com maior durabilidade (até 3 semanas)", duration_minutes: 60, price: 60, category: "tendencia" },
+  { name: "Unhas de Fibra de Vidro", description: "Alongamento natural com fibra de vidro", duration_minutes: 90, price: 120, category: "tendencia" },
+  { name: "Unhas em Gel Moldado", description: "Alongamento com gel moldado na unha", duration_minutes: 120, price: 150, category: "tendencia" },
+  { name: "Nail Art Simples", description: "Decoração artística simples (flores, listras, pontos)", duration_minutes: 30, price: 25, category: "tendencia" },
+  { name: "Nail Art Elaborada", description: "Decoração artística complexa e personalizada", duration_minutes: 60, price: 50, category: "tendencia" },
+  { name: "Francesinha", description: "Esmaltação estilo francês clássico ou colorido", duration_minutes: 45, price: 40, category: "tendencia" },
+  { name: "Baby Boomer", description: "Degradê suave do branco ao nude, estilo clássico", duration_minutes: 60, price: 55, category: "tendencia" },
+  { name: "Unhas Cromadas", description: "Efeito espelhado metalizado nas unhas", duration_minutes: 50, price: 65, category: "tendencia" },
+  { name: "Pedrarias e Joias", description: "Aplicação de pedrarias, strass e joias de unha", duration_minutes: 40, price: 45, category: "tendencia" },
+  // Premium
+  { name: "Spa dos Pés", description: "Escalda pés, esfoliação, hidratação profunda e pedicure", duration_minutes: 90, price: 120, category: "premium" },
+  { name: "Spa das Mãos", description: "Esfoliação, hidratação intensiva e manicure completa", duration_minutes: 60, price: 80, category: "premium" },
+  { name: "Blindagem de Unhas", description: "Fortalecimento e proteção das unhas naturais", duration_minutes: 45, price: 70, category: "premium" },
+  { name: "Manutenção de Alongamento", description: "Retoque e manutenção de unhas alongadas", duration_minutes: 60, price: 80, category: "premium" },
+  { name: "Remoção de Alongamento", description: "Remoção segura de unhas de gel ou acrílico", duration_minutes: 45, price: 50, category: "premium" },
+];
+
 const serviceSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   description: z.string().optional(),
@@ -55,6 +88,7 @@ const Services = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -118,7 +152,35 @@ const Services = () => {
       is_active: true,
     });
     setErrors({});
+    setShowSuggestions(true);
     setIsDialogOpen(true);
+  };
+
+  const selectSuggestion = (suggestion: ServiceSuggestion) => {
+    setFormData({
+      name: suggestion.name,
+      description: suggestion.description,
+      duration_minutes: suggestion.duration_minutes,
+      price: suggestion.price,
+      is_active: true,
+    });
+    setShowSuggestions(false);
+  };
+
+  const getCategoryLabel = (category: ServiceSuggestion["category"]) => {
+    switch (category) {
+      case "classico": return "Clássico";
+      case "tendencia": return "Tendência";
+      case "premium": return "Premium";
+    }
+  };
+
+  const getCategoryColor = (category: ServiceSuggestion["category"]) => {
+    switch (category) {
+      case "classico": return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+      case "tendencia": return "bg-pink-500/10 text-pink-600 border-pink-500/20";
+      case "premium": return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    }
   };
 
   const openEditServiceDialog = (service: Service) => {
@@ -436,12 +498,80 @@ const Services = () => {
 
         {/* Add/Edit Service Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-md bg-card">
+          <DialogContent className="sm:max-w-2xl bg-card max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-display">
                 {selectedService ? "Editar Serviço" : "Novo Serviço"}
               </DialogTitle>
             </DialogHeader>
+
+            {/* Service Suggestions - Only show when adding new service */}
+            {!selectedService && showSuggestions && (
+              <div className="space-y-4 mt-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span>Escolha um serviço popular ou crie o seu próprio</span>
+                </div>
+                
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                  {(["classico", "tendencia", "premium"] as const).map((category) => (
+                    <div key={category}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${getCategoryColor(category)}`}>
+                          {getCategoryLabel(category)}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {serviceSuggestions
+                          .filter((s) => s.category === category)
+                          .map((suggestion) => (
+                            <button
+                              key={suggestion.name}
+                              type="button"
+                              onClick={() => selectSuggestion(suggestion)}
+                              className="text-left p-3 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                            >
+                              <div className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">
+                                {suggestion.name}
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {suggestion.duration_minutes}min
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="w-3 h-3" />
+                                  R$ {suggestion.price}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 border-t border-border" />
+                  <span className="text-xs text-muted-foreground">ou preencha manualmente</span>
+                  <div className="flex-1 border-t border-border" />
+                </div>
+              </div>
+            )}
+
+            {!selectedService && !showSuggestions && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSuggestions(true)}
+                className="text-xs text-muted-foreground hover:text-primary"
+              >
+                <Sparkles className="w-3 h-3 mr-1" />
+                Ver sugestões de serviços
+              </Button>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome do Serviço *</Label>
@@ -449,9 +579,10 @@ const Services = () => {
                   id="name"
                   placeholder="Ex: Manicure Tradicional"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    if (showSuggestions) setShowSuggestions(false);
+                  }}
                   className={errors.name ? "border-destructive" : ""}
                 />
                 {errors.name && (
