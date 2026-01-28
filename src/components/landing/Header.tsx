@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 const navLinks = [
   { href: "#features", label: "Recursos" },
-  { href: "#contato", label: "Contato" },
+  { href: "#contato", label: "Demonstração" },
   { href: "#testimonials", label: "Depoimentos" },
   { href: "#faq", label: "FAQ" },
 ];
@@ -58,7 +58,7 @@ const Header = () => {
               className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg shadow-primary/25"
               asChild
             >
-              <Link to="/auth">Faça um Teste</Link>
+              <Link to="/auth">Começar Teste Grátis</Link>
             </Button>
           </div>
 
@@ -126,7 +126,7 @@ const Header = () => {
                     asChild
                     onClick={closeMobileMenu}
                   >
-                    <Link to="/auth">Faça um Teste</Link>
+                    <Link to="/auth">Começar Teste Grátis</Link>
                   </Button>
                 </div>
               </nav>

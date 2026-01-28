@@ -27,7 +27,7 @@ const Footer = () => {
           </nav>
 
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            Feito com <Heart className="w-4 h-4 text-primary fill-primary" /> para manicures
+            Feito com <Heart className="w-4 h-4 text-primary fill-primary" /> para profissionais da beleza
           </div>
         </div>
       </div>

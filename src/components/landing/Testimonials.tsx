@@ -44,10 +44,10 @@ const Testimonials = () => {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
-            O que nossas clientes dizem
+            Resultados comprovados por clientes
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Junte-se a centenas de profissionais que já transformaram sua gestão
+            Profissionais que escalam com automação e organização
           </p>
         </motion.div>
 

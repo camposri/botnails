@@ -5,32 +5,32 @@ const features = [
   {
     icon: Calendar,
     title: "Agendamento Inteligente",
-    description: "Sistema completo de agendamento com confirmações automáticas via WhatsApp",
+    description: "Confirmações automáticas via WhatsApp que reduzem faltas",
   },
   {
     icon: Users,
     title: "Gestão de Clientes",
-    description: "Controle completo da sua base de clientes e histórico de serviços",
+    description: "CRM simples para histórico e relacionamento com clientes",
   },
   {
     icon: BarChart3,
     title: "Relatórios Financeiros",
-    description: "Acompanhe seus ganhos e performance em tempo real",
+    description: "Relatórios claros em tempo real para decisões rápidas",
   },
   {
     icon: Smartphone,
     title: "100% Responsivo",
-    description: "Acesse de qualquer dispositivo, a qualquer hora e lugar",
+    description: "Experiência fluida em qualquer dispositivo",
   },
   {
     icon: Clock,
     title: "Economia de Tempo",
-    description: "Automatize tarefas repetitivas e foque no que realmente importa",
+    description: "Automatize tarefas e foque no atendimento",
   },
   {
     icon: Shield,
     title: "Dados Seguros",
-    description: "Seus dados protegidos com a melhor tecnologia de criptografia",
+    description: "Segurança e criptografia de nível empresarial",
   },
 ];
 
@@ -48,11 +48,10 @@ const Features = () => {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
-            Tudo que você precisa
+            Recursos que geram resultado
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Ferramentas profissionais desenvolvidas especialmente para manicures 
-            e profissionais da beleza
+            Ferramentas profissionais para reduzir faltas, ganhar tempo e escalar seu atendimento
           </p>
         </motion.div>
 

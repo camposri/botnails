@@ -27,7 +27,7 @@ const Hero = () => {
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
               <Sparkles className="w-4 h-4" />
-              Experimente Sem Compromisso
+              Teste grátis por 30 dias
             </span>
           </motion.div>
 
@@ -37,7 +37,7 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-7xl font-display font-bold mb-6 leading-tight"
           >
-            Gestão{" "}
+            Software {" "}
             <span className="text-gradient">Profissional</span>
             <br />
             para Manicures
@@ -49,8 +49,8 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto"
           >
-            Gerencie sua agenda, clientes e finanças de forma profissional e 
-            descomplicada. Tudo que você precisa em um só lugar.
+            Agenda inteligente, confirmações automáticas e finanças em tempo real. 
+            Mais receita, menos faltas — tudo em um só lugar.
           </motion.p>
 
           <motion.div
@@ -64,11 +64,11 @@ const Hero = () => {
               className="group bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground px-8 py-6 text-lg shadow-xl shadow-primary/25 transition-all hover:shadow-2xl hover:shadow-primary/30"
               onClick={() => document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              Fale Conosco
+              Solicitar Demonstração
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
             <div className="text-sm text-muted-foreground">
-              Conheça nossa solução personalizada
+              Implemente em horas, sem dor de cabeça
             </div>
           </motion.div>
 

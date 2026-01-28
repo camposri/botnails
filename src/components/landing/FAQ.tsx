@@ -54,7 +54,7 @@ const FAQ = () => {
             Dúvidas Frequentes
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Tudo que você precisa saber antes de começar
+            Principais respostas para começar agora
           </p>
         </motion.div>
 
