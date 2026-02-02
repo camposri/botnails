@@ -1,6 +1,8 @@
 import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileStatus } from "@/hooks/useProfileStatus";
+import { useAdminStatus } from "@/hooks/useAdminStatus";
 import DashboardSidebar from "./DashboardSidebar";
 import TrialBanner from "./TrialBanner";
 
@@ -10,7 +12,11 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { user, loading } = useAuth();
+  const { isActive, isLoading: profileLoading } = useProfileStatus();
+  const { isAdmin, isLoading: adminLoading } = useAdminStatus();
   const navigate = useNavigate();
+
+  const isLoading = loading || profileLoading || adminLoading;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -23,7 +29,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  // Redireciona para acesso pendente se não estiver ativo (exceto admins)
+  useEffect(() => {
+    if (!isLoading && user && user.email_confirmed_at && !isActive && !isAdmin) {
+      navigate("/access-pending");
+    }
+  }, [isLoading, user, isActive, isAdmin, navigate]);
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -37,6 +50,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }
 
   if (!user || !user.email_confirmed_at) {
+    return null;
+  }
+
+  // Bloqueia acesso para inativos (exceto admins)
+  if (!isActive && !isAdmin) {
     return null;
   }
 

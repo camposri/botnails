@@ -14,6 +14,7 @@ import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 import PublicBooking from "./pages/PublicBooking";
 import EmailPending from "./pages/EmailPending";
+import AccessPending from "./pages/AccessPending";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/book/:slug" element={<PublicBooking />} />
             <Route path="/email-pending" element={<EmailPending />} />
+            <Route path="/access-pending" element={<AccessPending />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/clients" element={<Clients />} />
             <Route path="/dashboard/services" element={<Services />} />
