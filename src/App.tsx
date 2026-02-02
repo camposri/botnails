@@ -13,6 +13,7 @@ import Appointments from "./pages/Appointments";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 import PublicBooking from "./pages/PublicBooking";
+import EmailPending from "./pages/EmailPending";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/book/:slug" element={<PublicBooking />} />
+            <Route path="/email-pending" element={<EmailPending />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/clients" element={<Clients />} />
             <Route path="/dashboard/services" element={<Services />} />

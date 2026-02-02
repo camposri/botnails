@@ -121,7 +121,9 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_premium: boolean | null
           phone: string | null
+          trial_ends_at: string | null
           updated_at: string
           user_id: string
         }
@@ -132,7 +134,9 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_premium?: boolean | null
           phone?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -143,7 +147,9 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_premium?: boolean | null
           phone?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           user_id?: string
         }

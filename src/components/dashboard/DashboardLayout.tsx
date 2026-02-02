@@ -2,6 +2,7 @@ import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardSidebar from "./DashboardSidebar";
+import TrialBanner from "./TrialBanner";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -14,6 +15,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
+    }
+    
+    // Verifica se o email foi confirmado
+    if (!loading && user && !user.email_confirmed_at) {
+      navigate("/email-pending", { state: { email: user.email } });
     }
   }, [user, loading, navigate]);
 
@@ -30,7 +36,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     );
   }
 
-  if (!user) {
+  if (!user || !user.email_confirmed_at) {
     return null;
   }
 
@@ -38,6 +44,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <div className="min-h-screen bg-background">
       <DashboardSidebar />
       <main className="ml-20 md:ml-64 p-6 md:p-8 transition-all duration-300">
+        <TrialBanner />
         {children}
       </main>
     </div>
