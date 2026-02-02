@@ -11,8 +11,10 @@ import {
   ChevronLeft,
   ChevronRight,
   BarChart3,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
@@ -28,6 +30,7 @@ const DashboardSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { signOut } = useAuth();
+  const { isAdmin } = useAdminStatus();
 
   return (
     <motion.aside
@@ -83,6 +86,21 @@ const DashboardSidebar = () => {
               </Link>
             );
           })}
+          
+          {/* Admin Link - Only visible for admins */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                location.pathname === "/admin"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              <Shield className="w-5 h-5 flex-shrink-0" />
+              {!collapsed && <span className="font-medium">Admin</span>}
+            </Link>
+          )}
         </nav>
 
         {/* Logout */}
