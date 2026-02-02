@@ -62,13 +62,15 @@ const Hero = () => {
             <Button
               size="lg"
               className="group bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground px-8 py-6 text-lg shadow-xl shadow-primary/25 transition-all hover:shadow-2xl hover:shadow-primary/30"
-              onClick={() => document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' })}
+              asChild
             >
-              Solicitar Demonstração
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <a href="/auth">
+                Começar Agora
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </a>
             </Button>
             <div className="text-sm text-muted-foreground">
-              Implemente em horas, sem dor de cabeça
+              Automatize sua agenda em minutos
             </div>
           </motion.div>
 
