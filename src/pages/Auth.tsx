@@ -100,9 +100,9 @@ const Auth = () => {
           });
         }
       } else {
-        const redirectUrl = `${window.location.origin}/`;
+        const redirectUrl = `${window.location.origin}/dashboard`;
         
-        const { error } = await supabase.auth.signUp({
+        const { error, data } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -128,11 +128,20 @@ const Auth = () => {
             });
           }
         } else {
-          toast({
-            title: "Conta criada! 🎉",
-            description: "Você já está logada no sistema",
-          });
-          navigate("/dashboard");
+          // Verifica se precisa confirmar email
+          if (data.user && !data.user.email_confirmed_at) {
+            toast({
+              title: "Verifique seu email! 📧",
+              description: "Enviamos um link de confirmação para sua caixa de entrada",
+            });
+            navigate("/email-pending", { state: { email } });
+          } else {
+            toast({
+              title: "Conta criada! 🎉",
+              description: "Você já está logada no sistema",
+            });
+            navigate("/dashboard");
+          }
         }
       }
     } catch (error) {
