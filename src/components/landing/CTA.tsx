@@ -30,22 +30,24 @@ const CTA = () => {
               </div>
               
               <h2 className="text-3xl md:text-5xl font-display font-bold mb-4">
-                Pronto para automatizar
+                Automatize sua agenda
                 <br />
-                <span className="text-gradient">sua gestão?</span>
+                <span className="text-gradient">em minutos!</span>
               </h2>
               
               <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8">
-                Comece hoje e veja resultados em poucos dias
+                Configure seus serviços, horários e relatórios de forma rápida e fácil
               </p>
               
               <Button
                 size="lg"
                 className="group bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground px-10 py-6 text-lg shadow-xl shadow-primary/25"
-                onClick={() => document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' })}
+                asChild
               >
-                Solicitar Demonstração
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <a href="/auth">
+                  Criar Conta Grátis
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </a>
               </Button>
             </motion.div>
           </div>

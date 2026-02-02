@@ -119,10 +119,10 @@ const ContactForm = () => {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
-            Fale com um Especialista
+            Dúvidas? Fale Conosco
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Descubra como implementar o BotNails no seu dia a dia
+            Estamos prontos para ajudar você a automatizar seu negócio
           </p>
         </motion.div>
 
@@ -141,10 +141,10 @@ const ContactForm = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-display font-semibold">
-                    Solicitar Demonstração
+                    Tire suas Dúvidas
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Retornamos em até 1 dia útil
+                    Respondemos em até 1 dia útil
                   </p>
                 </div>
               </div>
