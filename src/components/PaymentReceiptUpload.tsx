@@ -77,10 +77,13 @@ export const PaymentReceiptUpload = ({
 
       const publicUrl = urlData.publicUrl;
 
-      // Update profile with receipt URL
+      // Update profile with receipt URL and timestamp
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ payment_receipt_url: publicUrl })
+        .update({ 
+          payment_receipt_url: publicUrl,
+          payment_receipt_sent_at: new Date().toISOString()
+        })
         .eq("user_id", userId);
 
       if (updateError) {
