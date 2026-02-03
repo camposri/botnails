@@ -10,10 +10,10 @@ import { toast } from "@/hooks/use-toast";
 
 // Configurações de contato - atualize com seus dados reais
 const CONTACT_CONFIG = {
-  pixKey: "contato@botnails.com.br", // Chave Pix real
+  pixKey: "27178920874", // Chave Pix real
   pixValue: "49,00", // Valor do pagamento
-  whatsappNumber: "5511999999999", // Número do WhatsApp (formato: código país + DDD + número)
-  whatsappDisplayNumber: "(11) 99999-9999", // Número formatado para exibição
+  whatsappNumber: "5544999820748", // Número do WhatsApp (formato: código país + DDD + número)
+  whatsappDisplayNumber: "(44) 99982-0748", // Número formatado para exibição
 };
 
 const AccessPending = () => {
@@ -77,12 +77,9 @@ const AccessPending = () => {
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
-      `Olá! Fiz o pagamento do BotNails e gostaria de liberar meu acesso.\n\nMeu email: ${user?.email || ""}`
+      `Olá! Fiz o pagamento do BotNails e gostaria de liberar meu acesso.\n\nMeu email: ${user?.email || ""}`,
     );
-    window.open(
-      `https://wa.me/${CONTACT_CONFIG.whatsappNumber}?text=${message}`,
-      "_blank"
-    );
+    window.open(`https://wa.me/${CONTACT_CONFIG.whatsappNumber}?text=${message}`, "_blank");
   };
 
   if (loading) {
@@ -114,13 +111,11 @@ const AccessPending = () => {
         </div>
 
         {/* Conteúdo */}
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-4">
-          Acesso Pendente
-        </h1>
-        
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-4">Acesso Pendente</h1>
+
         <p className="text-muted-foreground mb-6">
-          Sua conta está aguardando aprovação. Assim que o pagamento for confirmado, 
-          seu acesso será liberado automaticamente.
+          Sua conta está aguardando aprovação. Assim que o pagamento for confirmado, seu acesso será liberado
+          automaticamente.
         </p>
 
         {/* Instruções de pagamento */}
@@ -136,23 +131,13 @@ const AccessPending = () => {
               </span>
               <div className="flex-1">
                 <span>
-                  Faça o Pix no valor de <strong className="text-foreground">R$ {CONTACT_CONFIG.pixValue}</strong> para a chave:
+                  Faça o Pix no valor de <strong className="text-foreground">R$ {CONTACT_CONFIG.pixValue}</strong> para
+                  a chave:
                 </span>
                 <div className="flex items-center gap-2 mt-2">
-                  <code className="bg-muted px-3 py-2 rounded text-xs flex-1 break-all">
-                    {CONTACT_CONFIG.pixKey}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopyPix}
-                    className="flex-shrink-0"
-                  >
-                    {copied ? (
-                      <Check className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
+                  <code className="bg-muted px-3 py-2 rounded text-xs flex-1 break-all">{CONTACT_CONFIG.pixKey}</code>
+                  <Button variant="outline" size="sm" onClick={handleCopyPix} className="flex-shrink-0">
+                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>
@@ -161,26 +146,20 @@ const AccessPending = () => {
               <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold">
                 2
               </span>
-              <span>
-                Envie o comprovante abaixo ou via WhatsApp
-              </span>
+              <span>Envie o comprovante abaixo ou via WhatsApp</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold">
                 3
               </span>
-              <span>
-                Aguarde a confirmação e seu acesso será liberado em até 24h
-              </span>
+              <span>Aguarde a confirmação e seu acesso será liberado em até 24h</span>
             </li>
           </ol>
         </div>
 
         {/* Upload de comprovante */}
         <div className="mb-6">
-          <h3 className="font-semibold text-foreground mb-3 text-left">
-            Enviar comprovante de pagamento
-          </h3>
+          <h3 className="font-semibold text-foreground mb-3 text-left">Enviar comprovante de pagamento</h3>
           {user && (
             <PaymentReceiptUpload
               userId={user.id}
@@ -192,19 +171,12 @@ const AccessPending = () => {
 
         {/* Botões de ação */}
         <div className="space-y-3">
-          <Button
-            onClick={handleRefresh}
-            className="w-full bg-gradient-to-r from-primary to-primary/90"
-          >
+          <Button onClick={handleRefresh} className="w-full bg-gradient-to-r from-primary to-primary/90">
             <RefreshCw className="w-4 h-4 mr-2" />
             Verificar se foi aprovado
           </Button>
 
-          <Button
-            variant="outline"
-            onClick={handleWhatsApp}
-            className="w-full"
-          >
+          <Button variant="outline" onClick={handleWhatsApp} className="w-full">
             <MessageCircle className="w-4 h-4 mr-2" />
             Enviar comprovante via WhatsApp
           </Button>
@@ -224,11 +196,8 @@ const AccessPending = () => {
             <ArrowLeft className="w-4 h-4" />
             Voltar ao site
           </button>
-          
-          <button
-            onClick={signOut}
-            className="text-sm text-muted-foreground hover:text-destructive transition-colors"
-          >
+
+          <button onClick={signOut} className="text-sm text-muted-foreground hover:text-destructive transition-colors">
             Sair da conta
           </button>
         </div>
