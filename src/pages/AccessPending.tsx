@@ -1,24 +1,105 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Clock, Mail, ArrowLeft, RefreshCw } from "lucide-react";
+import { PaymentReceiptUpload } from "@/components/PaymentReceiptUpload";
+import { Clock, Mail, ArrowLeft, RefreshCw, Copy, Check, MessageCircle } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+
+// Configurações de contato - atualize com seus dados reais
+const CONTACT_CONFIG = {
+  pixKey: "contato@botnails.com.br", // Chave Pix real
+  pixValue: "49,00", // Valor do pagamento
+  whatsappNumber: "5511999999999", // Número do WhatsApp (formato: código país + DDD + número)
+  whatsappDisplayNumber: "(11) 99999-9999", // Número formatado para exibição
+};
 
 const AccessPending = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const [copied, setCopied] = useState(false);
+  const [currentReceiptUrl, setCurrentReceiptUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("payment_receipt_url, is_active")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error) throw error;
+
+        // Se o usuário foi ativado, redireciona para o dashboard
+        if (data?.is_active) {
+          navigate("/dashboard");
+          return;
+        }
+
+        setCurrentReceiptUrl(data?.payment_receipt_url || null);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user, navigate]);
 
   const handleRefresh = () => {
     window.location.reload();
   };
 
+  const handleCopyPix = async () => {
+    try {
+      await navigator.clipboard.writeText(CONTACT_CONFIG.pixKey);
+      setCopied(true);
+      toast({
+        title: "Chave Pix copiada!",
+        description: "Cole no seu aplicativo de banco",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Erro ao copiar",
+        description: "Copie manualmente a chave Pix",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleWhatsApp = () => {
+    const message = encodeURIComponent(
+      `Olá! Fiz o pagamento do BotNails e gostaria de liberar meu acesso.\n\nMeu email: ${user?.email || ""}`
+    );
+    window.open(
+      `https://wa.me/${CONTACT_CONFIG.whatsappNumber}?text=${message}`,
+      "_blank"
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8 bg-background">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md text-center"
+        className="w-full max-w-lg text-center"
       >
         {/* Ícone */}
         <div className="relative inline-block mb-8">
@@ -33,7 +114,7 @@ const AccessPending = () => {
         </div>
 
         {/* Conteúdo */}
-        <h1 className="text-3xl font-display font-bold text-foreground mb-4">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-4">
           Acesso Pendente
         </h1>
         
@@ -42,30 +123,46 @@ const AccessPending = () => {
           seu acesso será liberado automaticamente.
         </p>
 
-        <div className="bg-muted/50 rounded-lg p-6 mb-8 text-left">
+        {/* Instruções de pagamento */}
+        <div className="bg-muted/50 rounded-lg p-6 mb-6 text-left">
           <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
             <Mail className="w-5 h-5 text-primary" />
             Como efetuar o pagamento
           </h3>
-          <ol className="space-y-3 text-sm text-muted-foreground">
+          <ol className="space-y-4 text-sm text-muted-foreground">
             <li className="flex items-start gap-3">
               <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold">
                 1
               </span>
-              <span>
-                Faça o Pix no valor de <strong className="text-foreground">R$ 49,00</strong> para a chave:
-                <br />
-                <code className="bg-muted px-2 py-1 rounded text-xs mt-1 inline-block">
-                  pix@botnails.com.br
-                </code>
-              </span>
+              <div className="flex-1">
+                <span>
+                  Faça o Pix no valor de <strong className="text-foreground">R$ {CONTACT_CONFIG.pixValue}</strong> para a chave:
+                </span>
+                <div className="flex items-center gap-2 mt-2">
+                  <code className="bg-muted px-3 py-2 rounded text-xs flex-1 break-all">
+                    {CONTACT_CONFIG.pixKey}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyPix}
+                    className="flex-shrink-0"
+                  >
+                    {copied ? (
+                      <Check className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold">
                 2
               </span>
               <span>
-                Envie o comprovante para nosso WhatsApp
+                Envie o comprovante abaixo ou via WhatsApp
               </span>
             </li>
             <li className="flex items-start gap-3">
@@ -79,6 +176,21 @@ const AccessPending = () => {
           </ol>
         </div>
 
+        {/* Upload de comprovante */}
+        <div className="mb-6">
+          <h3 className="font-semibold text-foreground mb-3 text-left">
+            Enviar comprovante de pagamento
+          </h3>
+          {user && (
+            <PaymentReceiptUpload
+              userId={user.id}
+              currentReceiptUrl={currentReceiptUrl}
+              onUploadSuccess={(url) => setCurrentReceiptUrl(url)}
+            />
+          )}
+        </div>
+
+        {/* Botões de ação */}
         <div className="space-y-3">
           <Button
             onClick={handleRefresh}
@@ -90,13 +202,20 @@ const AccessPending = () => {
 
           <Button
             variant="outline"
-            onClick={() => window.open("https://wa.me/5511999999999?text=Olá! Fiz o pagamento do BotNails e gostaria de liberar meu acesso. Meu email é: " + (user?.email || ""), "_blank")}
+            onClick={handleWhatsApp}
             className="w-full"
           >
+            <MessageCircle className="w-4 h-4 mr-2" />
             Enviar comprovante via WhatsApp
           </Button>
         </div>
 
+        {/* Contato WhatsApp */}
+        <p className="text-sm text-muted-foreground mt-4">
+          Dúvidas? Entre em contato: {CONTACT_CONFIG.whatsappDisplayNumber}
+        </p>
+
+        {/* Navegação */}
         <div className="pt-6 mt-6 border-t border-border flex items-center justify-between">
           <button
             onClick={() => navigate("/")}
