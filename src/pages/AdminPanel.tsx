@@ -36,6 +36,8 @@ import {
   Users,
   Crown,
   RefreshCw,
+  FileImage,
+  ExternalLink,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -50,6 +52,7 @@ interface Profile {
   is_active: boolean;
   trial_ends_at: string | null;
   created_at: string;
+  payment_receipt_url: string | null;
 }
 
 const AdminPanel = () => {
@@ -226,6 +229,7 @@ const AdminPanel = () => {
     total: profiles.length,
     active: profiles.filter((p) => p.is_active).length,
     premium: profiles.filter((p) => p.is_premium).length,
+    withReceipt: profiles.filter((p) => p.payment_receipt_url).length,
   };
 
   if (authLoading || adminLoading) {
@@ -334,6 +338,7 @@ const AdminPanel = () => {
                 <TableHead>Usuário</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Cadastro</TableHead>
+                <TableHead>Comprovante</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Plano</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -342,13 +347,13 @@ const AdminPanel = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : filteredProfiles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     Nenhum usuário encontrado
                   </TableCell>
                 </TableRow>
@@ -372,6 +377,22 @@ const AdminPanel = () => {
                       {format(new Date(profile.created_at), "dd/MM/yyyy", {
                         locale: ptBR,
                       })}
+                    </TableCell>
+                    <TableCell>
+                      {profile.payment_receipt_url ? (
+                        <a
+                          href={profile.payment_receipt_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                        >
+                          <FileImage className="w-4 h-4" />
+                          Ver
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge

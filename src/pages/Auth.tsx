@@ -128,6 +128,20 @@ const Auth = () => {
             });
           }
         } else {
+          // Notificar admin sobre novo cadastro
+          try {
+            await supabase.functions.invoke("notify-new-signup", {
+              body: {
+                user_name: name,
+                user_email: email,
+                signup_date: new Date().toISOString(),
+              },
+            });
+          } catch (notifyError) {
+            console.error("Error notifying admin:", notifyError);
+            // Não bloqueia o fluxo se a notificação falhar
+          }
+
           // Verifica se precisa confirmar email
           if (data.user && !data.user.email_confirmed_at) {
             toast({
