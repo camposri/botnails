@@ -124,6 +124,7 @@ export type Database = {
           is_active: boolean | null
           is_premium: boolean | null
           notify_on_signup: boolean | null
+          payment_receipt_sent_at: string | null
           payment_receipt_url: string | null
           phone: string | null
           trial_ends_at: string | null
@@ -140,6 +141,7 @@ export type Database = {
           is_active?: boolean | null
           is_premium?: boolean | null
           notify_on_signup?: boolean | null
+          payment_receipt_sent_at?: string | null
           payment_receipt_url?: string | null
           phone?: string | null
           trial_ends_at?: string | null
@@ -156,6 +158,7 @@ export type Database = {
           is_active?: boolean | null
           is_premium?: boolean | null
           notify_on_signup?: boolean | null
+          payment_receipt_sent_at?: string | null
           payment_receipt_url?: string | null
           phone?: string | null
           trial_ends_at?: string | null
