@@ -40,9 +40,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-pulse">
-            <span className="text-primary-foreground text-xl">💅</span>
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="BotNails Logo" 
+            className="w-16 h-16 object-contain animate-pulse"
+          />
           <p className="text-muted-foreground">Carregando...</p>
         </div>
       </div>

@@ -37,10 +37,7 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-7xl font-display font-bold mb-6 leading-tight"
           >
-            Software {" "}
-            <span className="text-gradient">Profissional</span>
-            <br />
-            para Manicures
+            Tenha Sua Própria Agenda Online
           </motion.h1>
 
           <motion.p
@@ -49,8 +46,7 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto"
           >
-            Agenda inteligente, confirmações automáticas e finanças em tempo real. 
-            Mais receita, menos faltas — tudo em um só lugar.
+            Receba agendamentos automáticos, organize seus horários e aumente sua renda.
           </motion.p>
 
           <motion.div

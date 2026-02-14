@@ -27,9 +27,11 @@ const Header = () => {
         <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <span className="text-primary-foreground text-lg">💅</span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="BotNails Logo" 
+              className="w-auto h-20 object-contain"
+            />
             <span className="text-xl font-display font-semibold text-foreground">
               BotNails
             </span>

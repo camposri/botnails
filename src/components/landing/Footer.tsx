@@ -6,9 +6,11 @@ const Footer = () => {
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <span className="text-primary-foreground text-lg">💅</span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="BotNails Logo" 
+              className="w-auto h-12 object-contain"
+            />
             <span className="text-xl font-display font-semibold text-foreground">
               BotNails
             </span>

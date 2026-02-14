@@ -44,9 +44,11 @@ const DashboardSidebar = () => {
         {/* Logo */}
         <div className="flex items-center justify-between mb-8">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-              <span className="text-primary-foreground text-lg">💅</span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="BotNails Logo" 
+              className="w-10 h-10 object-contain"
+            />
             {!collapsed && (
               <span className="text-xl font-display font-semibold text-foreground">
                 BotNails

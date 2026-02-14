@@ -193,9 +193,11 @@ const Auth = () => {
           </a>
 
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <span className="text-primary-foreground text-xl">💅</span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="BotNails Logo" 
+              className="w-16 h-16 object-contain"
+            />
             <span className="text-2xl font-display font-semibold text-foreground">
               BotNails
             </span>
