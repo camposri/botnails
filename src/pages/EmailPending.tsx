@@ -37,6 +37,22 @@ const EmailPending = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const handleCheckConfirmation = async () => {
+    const { data: { session } } = await supabase.auth.refreshSession();
+    if (session?.user?.email_confirmed_at) {
+      toast({
+        title: "Email confirmado! 🎉",
+        description: "Sua conta foi ativada com sucesso",
+      });
+      navigate("/dashboard");
+    } else {
+      toast({
+        title: "Ainda pendente",
+        description: "Seu email ainda não foi confirmado. Tente recarregar a página.",
+      });
+    }
+  };
+
   const handleResendEmail = async () => {
     if (!email) {
       toast({
@@ -166,6 +182,16 @@ const EmailPending = () => {
             </>
           )}
         </Button>
+
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={handleCheckConfirmation}
+            className="text-primary hover:text-primary/80 hover:bg-primary/5"
+          >
+            Já confirmei meu email
+          </Button>
+        </div>
 
         <div className="pt-6 border-t border-border">
           <a
