@@ -13,6 +13,8 @@ import {
   Check,
   List,
   LayoutGrid,
+  Settings as SettingsIcon,
+  X as XIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
+import { Switch } from "@/components/ui/switch";
 import {
   Popover,
   PopoverContent,
@@ -53,6 +56,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import {
+  AvailabilityConfigV1,
+  AvailabilityInterval,
+  DAY_KEYS,
+  DEFAULT_AVAILABILITY,
+  buildSlotStartsForDate,
+  normalizeAvailability,
+} from "@/lib/availability";
 
 interface Client {
   id: string;
@@ -88,11 +99,21 @@ const statusConfig = {
   cancelled: { label: "Cancelado", className: "bg-red-100 text-red-800 border-red-200" },
 };
 
-const timeSlots = Array.from({ length: 28 }, (_, i) => {
-  const hour = Math.floor(i / 2) + 7;
+const timeSlots = Array.from({ length: 48 }, (_, i) => {
+  const hour = Math.floor(i / 2);
   const minute = (i % 2) * 30;
   return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 });
+
+const dayLabels: Record<(typeof DAY_KEYS)[number], string> = {
+  sun: "Domingo",
+  mon: "Segunda",
+  tue: "Terça",
+  wed: "Quarta",
+  thu: "Quinta",
+  fri: "Sexta",
+  sat: "Sábado",
+};
 
 type ViewType = "list" | "calendar";
 
@@ -109,6 +130,10 @@ const Appointments = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [isAvailabilityDialogOpen, setIsAvailabilityDialogOpen] = useState(false);
+  const [availabilitySaving, setAvailabilitySaving] = useState(false);
+  const [availability, setAvailability] = useState<AvailabilityConfigV1>(DEFAULT_AVAILABILITY);
 
   const [formData, setFormData] = useState<{
     client_id: string;
@@ -130,6 +155,7 @@ const Appointments = () => {
     if (user) {
       fetchData();
       fetchAllAppointments();
+      fetchAvailability();
     }
   }, [user]);
 
@@ -159,6 +185,148 @@ const Appointments = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const fetchAvailability = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("availability")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      const raw = (data as any)?.availability;
+      setAvailability(normalizeAvailability(raw));
+    } catch (error: any) {
+      const msg = String(error?.message || "");
+      if (error?.code === "42703" || (msg.includes("availability") && msg.includes("does not exist"))) {
+        setAvailability(DEFAULT_AVAILABILITY);
+        return;
+      }
+      console.error("Error fetching availability:", error);
+    }
+  };
+
+  const saveAvailability = async () => {
+    if (!user) return;
+    setAvailabilitySaving(true);
+    try {
+      const payload = ({
+        user_id: user.id,
+        availability,
+      } as unknown) as any;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .upsert(payload, { onConflict: "user_id" })
+        .select("availability")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      setAvailability(normalizeAvailability((data as any)?.availability));
+      toast({
+        title: "Disponibilidade salva",
+        description: "Seus dias e horários foram atualizados.",
+      });
+      setIsAvailabilityDialogOpen(false);
+    } catch (error: any) {
+      const msg = String(error?.message || "");
+      if (error?.code === "42703" || (msg.includes("availability") && msg.includes("does not exist"))) {
+        toast({
+          title: "Banco ainda não atualizado",
+          description: "A coluna de disponibilidade ainda não existe no Supabase. Aplique a migration e tente novamente.",
+          variant: "destructive",
+        });
+      } else if (msg.toLowerCase().includes("row-level security") || error?.code === "42501") {
+        toast({
+          title: "Permissão insuficiente",
+          description: "O Supabase bloqueou a atualização por política de segurança (RLS).",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro ao salvar",
+          description: "Não foi possível salvar sua disponibilidade.",
+          variant: "destructive",
+        });
+      }
+      console.error("Error saving availability:", {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+      });
+    } finally {
+      setAvailabilitySaving(false);
+    }
+  };
+
+  const updateDayEnabled = (day: (typeof DAY_KEYS)[number], enabled: boolean) => {
+    setAvailability((prev) => ({
+      ...prev,
+      days: {
+        ...prev.days,
+        [day]: {
+          ...prev.days[day],
+          enabled,
+        },
+      },
+    }));
+  };
+
+  const updateInterval = (
+    day: (typeof DAY_KEYS)[number],
+    index: number,
+    patch: Partial<AvailabilityInterval>,
+  ) => {
+    setAvailability((prev) => {
+      const intervals = prev.days[day].intervals.map((it, i) =>
+        i === index ? { ...it, ...patch } : it,
+      );
+      return {
+        ...prev,
+        days: {
+          ...prev.days,
+          [day]: {
+            ...prev.days[day],
+            intervals,
+          },
+        },
+      };
+    });
+  };
+
+  const addInterval = (day: (typeof DAY_KEYS)[number]) => {
+    setAvailability((prev) => ({
+      ...prev,
+      days: {
+        ...prev.days,
+        [day]: {
+          ...prev.days[day],
+          enabled: true,
+          intervals: [...prev.days[day].intervals, { start: "09:00", end: "18:00" }],
+        },
+      },
+    }));
+  };
+
+  const removeInterval = (day: (typeof DAY_KEYS)[number], index: number) => {
+    setAvailability((prev) => {
+      const intervals = prev.days[day].intervals.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        days: {
+          ...prev.days,
+          [day]: {
+            ...prev.days[day],
+            intervals: intervals.length ? intervals : [{ start: "09:00", end: "18:00" }],
+          },
+        },
+      };
+    });
   };
 
   const fetchAppointments = async () => {
@@ -393,6 +561,9 @@ const Appointments = () => {
   };
 
   const selectedService = services.find((s) => s.id === formData.service_id);
+  const availableStartTimes = selectedService
+    ? buildSlotStartsForDate(availability, formData.date, selectedService.duration_minutes)
+    : timeSlots;
 
   return (
     <DashboardLayout>
@@ -432,6 +603,14 @@ const Appointments = () => {
                 Lista
               </Button>
             </div>
+            <Button
+              variant="outline"
+              onClick={() => setIsAvailabilityDialogOpen(true)}
+              className="hidden sm:inline-flex"
+            >
+              <SettingsIcon className="w-4 h-4 mr-2" />
+              Disponibilidade
+            </Button>
             <Button
               onClick={openNewAppointmentDialog}
               className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
@@ -716,7 +895,7 @@ const Appointments = () => {
                       <SelectValue placeholder="Horário" />
                     </SelectTrigger>
                     <SelectContent className="bg-card z-50 max-h-60">
-                      {timeSlots.map((time) => (
+                      {availableStartTimes.map((time) => (
                         <SelectItem key={time} value={time}>
                           {time}
                         </SelectItem>
@@ -826,6 +1005,137 @@ const Appointments = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+
+      <Dialog open={isAvailabilityDialogOpen} onOpenChange={setIsAvailabilityDialogOpen}>
+        <DialogContent className="sm:max-w-2xl bg-card">
+          <DialogHeader>
+            <DialogTitle className="font-display">Disponibilidade</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-xl border bg-muted/30 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-medium text-foreground">Configure seus dias e horários</p>
+                  <p className="text-sm text-muted-foreground">
+                    Padrão: segunda a sexta, 09:00–18:00. Você pode ativar qualquer dia e criar vários intervalos.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setAvailability(DEFAULT_AVAILABILITY)}
+                  disabled={availabilitySaving}
+                >
+                  Restaurar padrão
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {DAY_KEYS.map((day) => {
+                const d = availability.days[day];
+                return (
+                  <div key={day} className="rounded-xl border p-4 bg-background">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          checked={d.enabled}
+                          onCheckedChange={(checked) => updateDayEnabled(day, checked)}
+                        />
+                        <div>
+                          <p className="font-medium text-foreground">{dayLabels[day]}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {d.enabled ? "Ativo" : "Fechado"}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addInterval(day)}
+                        disabled={availabilitySaving}
+                      >
+                        Adicionar horário
+                      </Button>
+                    </div>
+
+                    {d.enabled && (
+                      <div className="mt-4 space-y-3">
+                        {d.intervals.map((interval, index) => (
+                          <div key={`${day}-${index}`} className="flex items-center gap-2">
+                            <Select
+                              value={interval.start}
+                              onValueChange={(value) => updateInterval(day, index, { start: value })}
+                            >
+                              <SelectTrigger className="bg-background w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-card z-50 max-h-60">
+                                {timeSlots.map((t) => (
+                                  <SelectItem key={`s-${day}-${index}-${t}`} value={t}>
+                                    {t}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            <span className="text-sm text-muted-foreground">até</span>
+
+                            <Select
+                              value={interval.end}
+                              onValueChange={(value) => updateInterval(day, index, { end: value })}
+                            >
+                              <SelectTrigger className="bg-background w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-card z-50 max-h-60">
+                                {timeSlots.map((t) => (
+                                  <SelectItem key={`e-${day}-${index}-${t}`} value={t}>
+                                    {t}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeInterval(day, index)}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <XIcon className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsAvailabilityDialogOpen(false)}
+                className="flex-1"
+                disabled={availabilitySaving}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={saveAvailability}
+                className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
+                disabled={availabilitySaving}
+              >
+                {availabilitySaving ? "Salvando..." : "Salvar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

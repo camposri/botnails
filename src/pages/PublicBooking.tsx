@@ -14,6 +14,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import {
+  AvailabilityConfigV1,
+  DEFAULT_AVAILABILITY,
+  buildSlotStartsForDate,
+  isTimeWithinAvailability,
+  normalizeAvailability,
+  timeToMinutes,
+} from "@/lib/availability";
 
 interface Profile {
   id: string;
@@ -22,6 +30,7 @@ interface Profile {
   business_name: string | null;
   phone: string | null;
   avatar_url: string | null;
+  availability?: AvailabilityConfigV1 | null;
 }
 
 interface Service {
@@ -38,13 +47,11 @@ interface Appointment {
   end_time: string;
 }
 
-const timeSlots = [
-  "07:00", "07:30", "08:00", "08:30", "09:00", "09:30",
-  "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
-  "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-  "16:00", "16:30", "17:00", "17:30", "18:00", "18:30",
-  "19:00", "19:30", "20:00", "20:30"
-];
+const timeSlots = Array.from({ length: 48 }, (_, i) => {
+  const hour = Math.floor(i / 2);
+  const minute = (i % 2) * 30;
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+});
 
 export default function PublicBooking() {
   const { slug } = useParams<{ slug: string }>();
@@ -54,6 +61,7 @@ export default function PublicBooking() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [availability, setAvailability] = useState<AvailabilityConfigV1>(DEFAULT_AVAILABILITY);
   const [services, setServices] = useState<Service[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [step, setStep] = useState(1);
@@ -97,6 +105,7 @@ export default function PublicBooking() {
       }
 
       setProfile(profileData);
+      setAvailability(normalizeAvailability((profileData as any)?.availability));
 
       const { data: servicesData, error: servicesError } = await supabase
         .from("services")
@@ -141,29 +150,42 @@ export default function PublicBooking() {
 
   const isTimeSlotAvailable = (time: string): boolean => {
     if (!selectedService || !selectedDate) return false;
+    if (!profile) return false;
+
+    if (!isTimeWithinAvailability(availability, selectedDate, time, selectedService.duration_minutes)) {
+      return false;
+    }
 
     const now = new Date();
     const slotDateTime = parse(`${format(selectedDate, "yyyy-MM-dd")} ${time}`, "yyyy-MM-dd HH:mm", new Date());
     
     if (isBefore(slotDateTime, now)) return false;
 
-    const slotStart = parse(time, "HH:mm", new Date());
-    const slotEnd = addMinutes(slotStart, selectedService.duration_minutes);
-    const slotEndStr = format(slotEnd, "HH:mm");
-
-    if (slotEndStr > "21:00") return false;
+    const slotStartMinutes = timeToMinutes(time);
+    const slotEndMinutes = slotStartMinutes + selectedService.duration_minutes;
 
     for (const apt of appointments) {
       const aptStart = apt.start_time.slice(0, 5);
       const aptEnd = apt.end_time.slice(0, 5);
 
-      if ((time >= aptStart && time < aptEnd) || (slotEndStr > aptStart && slotEndStr <= aptEnd) || (time <= aptStart && slotEndStr >= aptEnd)) {
+      const aptStartMinutes = timeToMinutes(aptStart);
+      const aptEndMinutes = timeToMinutes(aptEnd);
+
+      if (
+        (slotStartMinutes >= aptStartMinutes && slotStartMinutes < aptEndMinutes) ||
+        (slotEndMinutes > aptStartMinutes && slotEndMinutes <= aptEndMinutes) ||
+        (slotStartMinutes <= aptStartMinutes && slotEndMinutes >= aptEndMinutes)
+      ) {
         return false;
       }
     }
 
     return true;
   };
+
+  const availableTimes = selectedService && selectedDate
+    ? buildSlotStartsForDate(availability, selectedDate, selectedService.duration_minutes)
+    : timeSlots;
 
   const handleSubmit = async () => {
     if (!profile || !selectedService || !selectedDate || !selectedTime || !clientName.trim()) {
@@ -493,7 +515,7 @@ export default function PublicBooking() {
                     <div>
                       <Label className="mb-2 block">Horário</Label>
                       <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                        {timeSlots.map((time) => {
+                        {availableTimes.map((time) => {
                           const available = isTimeSlotAvailable(time);
                           return (
                             <Button

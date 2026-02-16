@@ -19,6 +19,17 @@ interface Profile {
   booking_slug: string | null;
 }
 
+const sanitizeSlug = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+
+const randomCode = (length = 4) => Math.random().toString(36).substring(2, 2 + length);
+
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -63,47 +74,69 @@ export default function Settings() {
 
   const generateSlug = () => {
     const base = businessName || fullName || "meu-negocio";
-    const slug = base
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
-    setBookingSlug(slug + "-" + Math.random().toString(36).substring(2, 6));
+    setBookingSlug(sanitizeSlug(base));
   };
 
-  const handleSave = async () => {
+  const handleSave = async (options?: { silent?: boolean }) => {
     if (!user) return;
 
     setSaving(true);
     try {
+      const normalizedBookingSlug = bookingSlug.trim() ? sanitizeSlug(bookingSlug.trim()) : "";
       const updates = {
         user_id: user.id,
         full_name: fullName.trim() || null,
         business_name: businessName.trim() || null,
         phone: phone.trim() || null,
-        booking_slug: bookingSlug.trim() || null,
+        booking_slug: normalizedBookingSlug || null,
         updated_at: new Date().toISOString(),
       };
 
-      if (profile) {
-        const { error } = await supabase
-          .from("profiles")
-          .update(updates)
-          .eq("id", profile.id);
+      const persist = async (payload: typeof updates) => {
+        if (profile) {
+          const { error } = await supabase
+            .from("profiles")
+            .update(payload)
+            .eq("id", profile.id);
 
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("profiles").insert(updates);
-        if (error) throw error;
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("profiles").insert(payload);
+          if (error) throw error;
+        }
+      };
+
+      try {
+        await persist(updates);
+      } catch (error: any) {
+        if (error?.code === "23505" && normalizedBookingSlug) {
+          const suggestedSlug = `${randomCode()}-${normalizedBookingSlug}`;
+          const retryUpdates = {
+            ...updates,
+            booking_slug: suggestedSlug,
+          };
+          await persist(retryUpdates);
+          setBookingSlug(suggestedSlug);
+          if (!options?.silent) {
+            toast({
+              title: "Link já estava em uso",
+              description: `Usamos uma variação disponível: ${suggestedSlug}`,
+            });
+          }
+        } else {
+          throw error;
+        }
       }
 
-      toast({
-        title: "Configurações salvas",
-        description: "Suas informações foram atualizadas com sucesso.",
-      });
+      if (!options?.silent) {
+        toast({
+          title: "Configurações salvas",
+          description: "Suas informações foram atualizadas com sucesso.",
+        });
+      }
 
-      fetchProfile();
+      await fetchProfile();
+      return true;
     } catch (error: any) {
       console.error("Error saving profile:", error);
       
@@ -120,6 +153,7 @@ export default function Settings() {
           variant: "destructive",
         });
       }
+      return false;
     } finally {
       setSaving(false);
     }
@@ -141,6 +175,7 @@ export default function Settings() {
   };
 
   const bookingLink = bookingSlug ? `${window.location.origin}/book/${bookingSlug}` : null;
+  const isBookingSlugDirty = bookingSlug.trim() !== (profile?.booking_slug || "");
 
   return (
     <DashboardLayout>
@@ -253,6 +288,11 @@ export default function Settings() {
                     <p className="text-xs text-muted-foreground mt-1">
                       Use apenas letras minúsculas, números e hífens
                     </p>
+                    {isBookingSlugDirty && bookingSlug.trim() && (
+                      <p className="text-xs text-amber-600 mt-2">
+                        Salve as configurações para ativar este link.
+                      </p>
+                    )}
                   </div>
 
                   {bookingLink && (
@@ -265,7 +305,13 @@ export default function Settings() {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={copyBookingLink}
+                          onClick={async () => {
+                            if (isBookingSlugDirty) {
+                              const ok = await handleSave({ silent: true });
+                              if (!ok) return;
+                            }
+                            copyBookingLink();
+                          }}
                         >
                           {copied ? (
                             <Check className="w-4 h-4 text-green-500" />
