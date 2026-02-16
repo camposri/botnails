@@ -179,7 +179,7 @@ export default function Settings() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-5xl mx-auto">
         <div>
           <h1 className="text-2xl font-bold">Configurações</h1>
           <p className="text-muted-foreground">
@@ -270,7 +270,7 @@ export default function Settings() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="bookingSlug">Link personalizado</Label>
-                    <div className="flex gap-2 mt-1">
+                    <div className="flex flex-col sm:flex-row gap-2 mt-1">
                       <Input
                         id="bookingSlug"
                         value={bookingSlug}
@@ -281,6 +281,7 @@ export default function Settings() {
                         variant="outline"
                         onClick={generateSlug}
                         type="button"
+                        className="w-full sm:w-auto"
                       >
                         Gerar
                       </Button>
@@ -298,8 +299,8 @@ export default function Settings() {
                   {bookingLink && (
                     <div className="bg-muted/50 rounded-lg p-3">
                       <p className="text-xs text-muted-foreground mb-2">Seu link:</p>
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 text-sm bg-background px-3 py-2 rounded border truncate">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <code className="flex-1 text-sm bg-background px-3 py-2 rounded border break-all sm:truncate">
                           {bookingLink}
                         </code>
                         <Button
@@ -312,6 +313,7 @@ export default function Settings() {
                             }
                             copyBookingLink();
                           }}
+                          className="w-full sm:w-10"
                         >
                           {copied ? (
                             <Check className="w-4 h-4 text-green-500" />
@@ -329,8 +331,8 @@ export default function Settings() {
         )}
 
         {!loading && (
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={saving}>
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+            <Button onClick={() => handleSave()} disabled={saving} className="w-full sm:w-auto">
               <Save className="w-4 h-4 mr-2" />
               {saving ? "Salvando..." : "Salvar configurações"}
             </Button>

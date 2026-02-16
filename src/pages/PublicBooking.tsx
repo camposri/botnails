@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { format, addDays, isBefore, startOfDay, parse, addMinutes } from "date-fns";
+import { format, isBefore, startOfDay, parse, addMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, Clock, ArrowLeft, ArrowRight, Check, User, Phone, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +22,7 @@ import {
   normalizeAvailability,
   timeToMinutes,
 } from "@/lib/availability";
+import { isValidMobileBR, normalizePhoneBR } from "@/lib/phone";
 
 interface Profile {
   id: string;
@@ -55,7 +56,6 @@ const timeSlots = Array.from({ length: 48 }, (_, i) => {
 
 export default function PublicBooking() {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
@@ -197,29 +197,57 @@ export default function PublicBooking() {
       return;
     }
 
+    if (clientPhone.trim() && !isValidMobileBR(clientPhone.trim())) {
+      toast({
+        title: "Telefone inválido",
+        description: "Informe um celular válido com DDD (ex: 44999990000).",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       const startTime = parse(selectedTime, "HH:mm", new Date());
       const endTime = addMinutes(startTime, selectedService.duration_minutes);
 
-      const { error } = await supabase.from("appointments").insert({
+      const normalizedPhone = clientPhone.trim()
+        ? normalizePhoneBR(clientPhone.trim())
+        : null;
+
+      const payload = {
         user_id: profile.user_id,
         service_id: selectedService.id,
         service_name: selectedService.name,
         client_name: clientName.trim(),
+        client_phone: normalizedPhone?.e164 || null,
         date: format(selectedDate, "yyyy-MM-dd"),
         start_time: selectedTime,
         end_time: format(endTime, "HH:mm"),
         price: selectedService.price,
         notes: notes.trim() || null,
         status: "pending",
-      });
+      };
+
+      const { error } = await supabase.from("appointments").insert(payload as any);
 
       if (error) throw error;
 
       setBookingComplete(true);
     } catch (error) {
+      const err: any = error;
+      if (err?.code === "23505") {
+        toast({
+          title: "Horário indisponível",
+          description: "Alguém acabou de agendar este horário. Escolha outro horário disponível.",
+          variant: "destructive",
+        });
+        setStep(2);
+        await fetchAppointments();
+        return;
+      }
+
       console.error("Error creating appointment:", error);
       toast({
         title: "Erro ao agendar",

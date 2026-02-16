@@ -4,7 +4,6 @@ import { format, addMinutes, parseISO, isToday, isTomorrow, startOfMonth, endOfM
 import { ptBR } from "date-fns/locale";
 import {
   Calendar as CalendarIcon,
-  Clock,
   Plus,
   ChevronLeft,
   ChevronRight,
@@ -64,6 +63,7 @@ import {
   buildSlotStartsForDate,
   normalizeAvailability,
 } from "@/lib/availability";
+import { isValidMobileBR, normalizePhoneBR } from "@/lib/phone";
 
 interface Client {
   id: string;
@@ -84,6 +84,7 @@ interface Appointment {
   service_id: string | null;
   client_name: string;
   service_name: string;
+  client_phone?: string | null;
   date: string;
   start_time: string;
   end_time: string;
@@ -441,13 +442,35 @@ const Appointments = () => {
 
       const endTime = calculateEndTime(formData.start_time, service.duration_minutes);
 
+      const dateStr = format(formData.date, "yyyy-MM-dd");
+      const conflictQuery = supabase
+        .from("appointments")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("date", dateStr)
+        .eq("start_time", formData.start_time)
+        .neq("status", "cancelled");
+
+      const { data: conflict } = selectedAppointment
+        ? await conflictQuery.neq("id", selectedAppointment.id).maybeSingle()
+        : await conflictQuery.maybeSingle();
+
+      if (conflict?.id) {
+        toast({
+          title: "Horário indisponível",
+          description: "Já existe um agendamento neste mesmo horário.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const appointmentData = {
         user_id: user.id,
         client_id: formData.client_id,
         service_id: formData.service_id,
         client_name: client.name,
         service_name: service.name,
-        date: format(formData.date, "yyyy-MM-dd"),
+        date: dateStr,
         start_time: formData.start_time,
         end_time: endTime,
         price: service.price,
@@ -482,6 +505,15 @@ const Appointments = () => {
       fetchAppointments();
       fetchAllAppointments();
     } catch (error) {
+      const err: any = error;
+      if (err?.code === "23505") {
+        toast({
+          title: "Horário indisponível",
+          description: "Já existe um agendamento neste mesmo horário.",
+          variant: "destructive",
+        });
+        return;
+      }
       console.error("Error saving appointment:", error);
       toast({
         title: "Erro ao salvar",
@@ -524,9 +556,45 @@ const Appointments = () => {
 
   const updateStatus = async (appointment: Appointment, newStatus: Appointment["status"]) => {
     try {
+      let clientId: string | null = appointment.client_id;
+
+      if (newStatus === "confirmed" && !clientId) {
+        if (!user) throw new Error("user_not_authenticated");
+        const rawPhone = String(appointment.client_phone || "");
+        if (rawPhone && isValidMobileBR(rawPhone)) {
+          const normalized = normalizePhoneBR(rawPhone);
+          const e164 = normalized?.e164;
+
+          if (e164) {
+            const { data: existingClient, error: clientFindError } = await supabase
+              .from("clients")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("phone", e164)
+              .maybeSingle();
+
+            if (clientFindError) throw clientFindError;
+
+            if (existingClient?.id) {
+              clientId = existingClient.id;
+            } else {
+              const { data: newClient, error: clientInsertError } = await supabase
+                .from("clients")
+                .insert(({ user_id: user.id, name: appointment.client_name, phone: e164 } as unknown) as any)
+                .select("id")
+                .single();
+
+              if (clientInsertError) throw clientInsertError;
+              clientId = newClient.id;
+            }
+          }
+        }
+      }
+
+      const updatePayload = ({ status: newStatus, client_id: clientId } as unknown) as any;
       const { error } = await supabase
         .from("appointments")
-        .update({ status: newStatus })
+        .update(updatePayload)
         .eq("id", appointment.id);
 
       if (error) throw error;
@@ -582,13 +650,13 @@ const Appointments = () => {
               Gerencie seus agendamentos
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border border-border overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex w-full sm:w-auto rounded-lg border border-border overflow-hidden">
               <Button
                 variant={viewType === "calendar" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewType("calendar")}
-                className="rounded-none"
+                className="rounded-none flex-1 sm:flex-none"
               >
                 <LayoutGrid className="w-4 h-4 mr-1" />
                 Calendário
@@ -597,7 +665,7 @@ const Appointments = () => {
                 variant={viewType === "list" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewType("list")}
-                className="rounded-none"
+                className="rounded-none flex-1 sm:flex-none"
               >
                 <List className="w-4 h-4 mr-1" />
                 Lista
@@ -606,14 +674,14 @@ const Appointments = () => {
             <Button
               variant="outline"
               onClick={() => setIsAvailabilityDialogOpen(true)}
-              className="hidden sm:inline-flex"
+              className="w-full sm:w-auto"
             >
               <SettingsIcon className="w-4 h-4 mr-2" />
               Disponibilidade
             </Button>
             <Button
               onClick={openNewAppointmentDialog}
-              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
+              className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
             >
               <Plus className="w-4 h-4 mr-2" />
               Novo Agendamento

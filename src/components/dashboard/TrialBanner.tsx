@@ -24,7 +24,7 @@ const TrialBanner = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-destructive" />
@@ -40,7 +40,7 @@ const TrialBanner = () => {
             </div>
             <Button
               onClick={() => setShowPremiumModal(true)}
-              className="bg-gradient-to-r from-primary to-accent text-primary-foreground"
+              className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent text-primary-foreground"
             >
               <Crown className="w-4 h-4 mr-2" />
               Assinar Premium
@@ -89,8 +89,8 @@ const TrialBanner = () => {
           exit={{ opacity: 0, y: -20 }}
           className={`${style.bg} border rounded-lg p-4 mb-6`}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3">
               <div className={`w-10 h-10 rounded-full ${style.icon} flex items-center justify-center`}>
                 <Sparkles className="w-5 h-5" />
               </div>
@@ -109,12 +109,12 @@ const TrialBanner = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowPremiumModal(true)}
-                className="border-primary/20 hover:bg-primary/10"
+                className="w-full sm:w-auto border-primary/20 hover:bg-primary/10"
               >
                 <Crown className="w-4 h-4 mr-2 text-primary" />
                 Ver planos
