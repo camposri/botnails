@@ -37,7 +37,7 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-7xl font-display font-bold mb-6 leading-tight"
           >
-            Tenha Sua Própria Agenda Online
+            Sua Agenda Online
           </motion.h1>
 
           <motion.p

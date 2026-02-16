@@ -1,6 +1,10 @@
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Check, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import QRCode from "qrcode";
+import { toast } from "@/hooks/use-toast";
+import { buildPixCopyPastePayload } from "@/lib/pix";
 
 interface PremiumModalProps {
   isOpen: boolean;
@@ -18,6 +22,74 @@ const PremiumModal = ({ isOpen, onClose }: PremiumModalProps) => {
     "Backup automático dos dados",
     "Múltiplos serviços",
   ];
+
+  const [showPix, setShowPix] = useState(false);
+  const [pixQrDataUrl, setPixQrDataUrl] = useState<string | null>(null);
+  const [pixPayload, setPixPayload] = useState<string | null>(null);
+  const [isGeneratingPix, setIsGeneratingPix] = useState(false);
+
+  const pixConfig = useMemo(
+    () => ({
+      pixKey: "27178920874",
+      amount: 49,
+      merchantName: "BOTNAILS",
+      merchantCity: "BRASILIA",
+      txid: "BOTNAILS",
+      description: "Assinatura BotNails Premium",
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowPix(false);
+      setPixQrDataUrl(null);
+      setPixPayload(null);
+      setIsGeneratingPix(false);
+    }
+  }, [isOpen]);
+
+  const handleGeneratePix = async () => {
+    setShowPix(true);
+    if (pixQrDataUrl && pixPayload) return;
+
+    setIsGeneratingPix(true);
+    try {
+      const payload = buildPixCopyPastePayload(pixConfig);
+      const dataUrl = await QRCode.toDataURL(payload, {
+        width: 320,
+        margin: 1,
+        errorCorrectionLevel: "M",
+      });
+      setPixPayload(payload);
+      setPixQrDataUrl(dataUrl);
+    } catch {
+      toast({
+        title: "Erro ao gerar QR Code",
+        description: "Não foi possível gerar o Pix agora. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPix(false);
+    }
+  };
+
+  const handleCopyPix = async () => {
+    if (!pixPayload) return;
+    try {
+      await navigator.clipboard.writeText(pixPayload);
+      toast({
+        title: "Pix copiado!",
+        description: "Cole no app do seu banco para pagar.",
+      });
+    } catch {
+      toast({
+        title: "Não foi possível copiar",
+        description: "Copie manualmente o código Pix (copia e cola).",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -84,14 +156,66 @@ const PremiumModal = ({ isOpen, onClose }: PremiumModalProps) => {
 
               <Button
                 className="w-full h-12 bg-gradient-to-r from-primary to-accent text-primary-foreground text-lg font-semibold shadow-lg"
-                onClick={() => {
-                  // TODO: Implementar integração com gateway de pagamento
-                  window.open("https://wa.me/5511999999999?text=Olá! Quero assinar o plano premium do BotNails", "_blank");
-                }}
+                onClick={handleGeneratePix}
               >
                 <Sparkles className="w-5 h-5 mr-2" />
-                Assinar agora
+                Gerar QR Code Pix
               </Button>
+
+              <AnimatePresence>
+                {showPix && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    className="mt-6"
+                  >
+                    <div className="rounded-xl border bg-card p-5">
+                      <div className="flex items-center justify-between gap-4 mb-4">
+                        <div>
+                          <p className="font-semibold text-foreground">Pagamento via Pix</p>
+                          <p className="text-sm text-muted-foreground">R$ {pixConfig.amount.toFixed(2)} / mês</p>
+                        </div>
+                        <Button variant="outline" onClick={() => setShowPix(false)}>
+                          Fechar
+                        </Button>
+                      </div>
+
+                      {isGeneratingPix && (
+                        <div className="py-10 text-center text-sm text-muted-foreground">Gerando QR Code…</div>
+                      )}
+
+                      {!isGeneratingPix && pixQrDataUrl && (
+                        <div className="flex flex-col items-center">
+                          <img
+                            src={pixQrDataUrl}
+                            alt="QR Code Pix"
+                            className="w-64 h-64 rounded-lg border bg-white"
+                          />
+
+                          {pixPayload && (
+                            <div className="w-full mt-4">
+                              <div className="flex items-center justify-between gap-3 mb-2">
+                                <p className="text-sm font-medium text-foreground">Pix (copia e cola)</p>
+                                <Button variant="outline" size="sm" onClick={handleCopyPix}>
+                                  Copiar
+                                </Button>
+                              </div>
+                              <code className="block w-full bg-muted px-3 py-2 rounded text-xs break-all select-text">
+                                {pixPayload}
+                              </code>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Após pagar, envie o comprovante para liberar o acesso premium.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <p className="text-center text-sm text-muted-foreground mt-4">
                 Cancele quando quiser. Sem fidelidade.

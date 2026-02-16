@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useTrialStatus } from "@/hooks/useTrialStatus";
+import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { PaymentReceiptUpload } from "@/components/PaymentReceiptUpload";
@@ -19,9 +21,17 @@ const CONTACT_CONFIG = {
 const AccessPending = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isLoading: trialLoading, isPremium, isExpired } = useTrialStatus();
+  const { isAdmin, isLoading: adminLoading } = useAdminStatus();
   const [copied, setCopied] = useState(false);
   const [currentReceiptUrl, setCurrentReceiptUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!trialLoading && !adminLoading && (isAdmin || isPremium || !isExpired)) {
+      navigate("/dashboard");
+    }
+  }, [trialLoading, adminLoading, isAdmin, isPremium, isExpired, navigate]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -30,14 +40,13 @@ const AccessPending = () => {
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select("payment_receipt_url, is_active")
+          .select("payment_receipt_url, is_premium")
           .eq("user_id", user.id)
           .single();
 
         if (error) throw error;
 
-        // Se o usuário foi ativado, redireciona para o dashboard
-        if (data?.is_active) {
+        if (data?.is_premium) {
           navigate("/dashboard");
           return;
         }
@@ -82,7 +91,7 @@ const AccessPending = () => {
     window.open(`https://wa.me/${CONTACT_CONFIG.whatsappNumber}?text=${message}`, "_blank");
   };
 
-  if (loading) {
+  if (loading || trialLoading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -111,11 +120,10 @@ const AccessPending = () => {
         </div>
 
         {/* Conteúdo */}
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-4">Acesso Pendente</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-4">Seu período de teste terminou</h1>
 
         <p className="text-muted-foreground mb-6">
-          Sua conta está aguardando aprovação. Assim que o pagamento for confirmado, seu acesso será liberado
-          automaticamente.
+          Para continuar usando o sistema, envie o comprovante de pagamento. Assim que for confirmado, seu acesso será liberado automaticamente.
         </p>
 
         {/* Instruções de pagamento */}

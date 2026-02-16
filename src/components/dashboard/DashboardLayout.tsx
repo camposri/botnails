@@ -1,7 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfileStatus } from "@/hooks/useProfileStatus";
+import { useTrialStatus } from "@/hooks/useTrialStatus";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import DashboardSidebar from "./DashboardSidebar";
 import TrialBanner from "./TrialBanner";
@@ -12,11 +12,11 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { user, loading } = useAuth();
-  const { isActive, isLoading: profileLoading } = useProfileStatus();
+  const { isLoading: trialLoading, isPremium, isExpired } = useTrialStatus();
   const { isAdmin, isLoading: adminLoading } = useAdminStatus();
   const navigate = useNavigate();
 
-  const isLoading = loading || profileLoading || adminLoading;
+  const isLoading = loading || trialLoading || adminLoading;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,10 +31,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   // Redireciona para acesso pendente se não estiver ativo (exceto admins)
   useEffect(() => {
-    if (!isLoading && user && user.email_confirmed_at && !isActive && !isAdmin) {
+    if (!isLoading && user && user.email_confirmed_at && isExpired && !isPremium && !isAdmin) {
       navigate("/access-pending");
     }
-  }, [isLoading, user, isActive, isAdmin, navigate]);
+  }, [isLoading, user, isExpired, isPremium, isAdmin, navigate]);
 
   if (isLoading) {
     return (
@@ -55,8 +55,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     return null;
   }
 
-  // Bloqueia acesso para inativos (exceto admins)
-  if (!isActive && !isAdmin) {
+  if (isExpired && !isPremium && !isAdmin) {
     return null;
   }
 
