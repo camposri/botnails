@@ -97,11 +97,12 @@ export const PaymentReceiptUpload = ({
         title: "Comprovante enviado! ✅",
         description: "Seu comprovante foi enviado com sucesso. Aguarde a aprovação.",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { message?: unknown };
       console.error("Upload error:", error);
       toast({
         title: "Erro ao enviar",
-        description: error.message || "Ocorreu um erro ao enviar o comprovante",
+        description: String(err?.message || "Ocorreu um erro ao enviar o comprovante"),
         variant: "destructive",
       });
     } finally {
@@ -149,7 +150,7 @@ export const PaymentReceiptUpload = ({
         title: "Comprovante removido",
         description: "Você pode enviar um novo comprovante.",
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Erro",
         description: "Não foi possível remover o comprovante",

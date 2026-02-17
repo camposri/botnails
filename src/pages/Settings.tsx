@@ -108,8 +108,9 @@ export default function Settings() {
 
       try {
         await persist(updates);
-      } catch (error: any) {
-        if (error?.code === "23505" && normalizedBookingSlug) {
+      } catch (error) {
+        const err = error as { code?: unknown };
+        if (String(err?.code || "") === "23505" && normalizedBookingSlug) {
           const suggestedSlug = `${randomCode()}-${normalizedBookingSlug}`;
           const retryUpdates = {
             ...updates,
@@ -137,10 +138,11 @@ export default function Settings() {
 
       await fetchProfile();
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error saving profile:", error);
-      
-      if (error.code === "23505") {
+
+      const err = error as { code?: unknown };
+      if (String(err?.code || "") === "23505") {
         toast({
           title: "Slug já existe",
           description: "Este link personalizado já está em uso. Escolha outro.",

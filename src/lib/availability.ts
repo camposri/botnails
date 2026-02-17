@@ -52,17 +52,26 @@ export const normalizeAvailability = (
   const candidate = input as Partial<AvailabilityConfigV1>;
   if (candidate.version !== 1 || !candidate.days) return DEFAULT_AVAILABILITY;
 
+  const candidateDays = candidate.days as unknown;
+  const candidateDaysRecord: Record<string, unknown> =
+    candidateDays && typeof candidateDays === "object" ? (candidateDays as Record<string, unknown>) : {};
+
   const days: AvailabilityConfigV1["days"] = {
     ...DEFAULT_AVAILABILITY.days,
   };
 
   for (const key of DAY_KEYS) {
-    const d = (candidate.days as any)?.[key] as Partial<AvailabilityDay> | undefined;
+    const dUnknown = candidateDaysRecord[key];
+    const d = dUnknown && typeof dUnknown === "object" ? (dUnknown as Record<string, unknown>) : undefined;
     if (!d) continue;
     const enabled = typeof d.enabled === "boolean" ? d.enabled : days[key].enabled;
-    const intervalsRaw = Array.isArray(d.intervals) ? d.intervals : days[key].intervals;
+    const intervalsRawUnknown = Array.isArray(d.intervals) ? (d.intervals as unknown[]) : days[key].intervals;
+    const intervalsRaw = Array.isArray(intervalsRawUnknown) ? intervalsRawUnknown : [];
     const intervals = intervalsRaw
-      .map((it: any) => ({ start: String(it?.start || ""), end: String(it?.end || "") }))
+      .map((it) => {
+        const obj = it && typeof it === "object" ? (it as Record<string, unknown>) : undefined;
+        return { start: String(obj?.start || ""), end: String(obj?.end || "") };
+      })
       .filter((it) => /^\d{2}:\d{2}$/.test(it.start) && /^\d{2}:\d{2}$/.test(it.end))
       .filter((it) => timeToMinutes(it.end) > timeToMinutes(it.start));
 
@@ -122,4 +131,3 @@ export const isTimeWithinAvailability = (
     return start >= a && end <= b;
   });
 };
-

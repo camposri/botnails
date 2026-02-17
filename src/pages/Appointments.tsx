@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addMinutes, parseISO, isToday, isTomorrow, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useSearchParams } from "react-router-dom";
 import {
   Calendar as CalendarIcon,
   Plus,
@@ -120,6 +121,7 @@ type ViewType = "list" | "calendar";
 
 const Appointments = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -161,6 +163,15 @@ const Appointments = () => {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+    if (searchParams.get("new") !== "1") return;
+    openNewAppointmentDialog();
+    const next = new URLSearchParams(searchParams);
+    next.delete("new");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, user]);
+
+  useEffect(() => {
     if (user) {
       fetchAppointments();
     }
@@ -198,11 +209,11 @@ const Appointments = () => {
         .maybeSingle();
 
       if (error) throw error;
-      const raw = (data as any)?.availability;
-      setAvailability(normalizeAvailability(raw));
-    } catch (error: any) {
-      const msg = String(error?.message || "");
-      if (error?.code === "42703" || (msg.includes("availability") && msg.includes("does not exist"))) {
+      setAvailability(normalizeAvailability(data?.availability));
+    } catch (error) {
+      const err = error as { message?: unknown; code?: unknown };
+      const msg = String(err?.message || "");
+      if (String(err?.code || "") === "42703" || (msg.includes("availability") && msg.includes("does not exist"))) {
         setAvailability(DEFAULT_AVAILABILITY);
         return;
       }
@@ -214,10 +225,10 @@ const Appointments = () => {
     if (!user) return;
     setAvailabilitySaving(true);
     try {
-      const payload = ({
+      const payload = {
         user_id: user.id,
         availability,
-      } as unknown) as any;
+      };
 
       const { data, error } = await supabase
         .from("profiles")
@@ -227,21 +238,22 @@ const Appointments = () => {
 
       if (error) throw error;
 
-      setAvailability(normalizeAvailability((data as any)?.availability));
+      setAvailability(normalizeAvailability(data?.availability));
       toast({
         title: "Disponibilidade salva",
         description: "Seus dias e horários foram atualizados.",
       });
       setIsAvailabilityDialogOpen(false);
-    } catch (error: any) {
-      const msg = String(error?.message || "");
-      if (error?.code === "42703" || (msg.includes("availability") && msg.includes("does not exist"))) {
+    } catch (error) {
+      const err = error as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown };
+      const msg = String(err?.message || "");
+      if (String(err?.code || "") === "42703" || (msg.includes("availability") && msg.includes("does not exist"))) {
         toast({
           title: "Banco ainda não atualizado",
           description: "A coluna de disponibilidade ainda não existe no Supabase. Aplique a migration e tente novamente.",
           variant: "destructive",
         });
-      } else if (msg.toLowerCase().includes("row-level security") || error?.code === "42501") {
+      } else if (msg.toLowerCase().includes("row-level security") || String(err?.code || "") === "42501") {
         toast({
           title: "Permissão insuficiente",
           description: "O Supabase bloqueou a atualização por política de segurança (RLS).",
@@ -255,10 +267,10 @@ const Appointments = () => {
         });
       }
       console.error("Error saving availability:", {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
+        message: err?.message,
+        code: err?.code,
+        details: err?.details,
+        hint: err?.hint,
       });
     } finally {
       setAvailabilitySaving(false);
@@ -505,8 +517,8 @@ const Appointments = () => {
       fetchAppointments();
       fetchAllAppointments();
     } catch (error) {
-      const err: any = error;
-      if (err?.code === "23505") {
+      const err = error as { code?: unknown };
+      if (String(err?.code || "") === "23505") {
         toast({
           title: "Horário indisponível",
           description: "Já existe um agendamento neste mesmo horário.",
@@ -580,7 +592,7 @@ const Appointments = () => {
             } else {
               const { data: newClient, error: clientInsertError } = await supabase
                 .from("clients")
-                .insert(({ user_id: user.id, name: appointment.client_name, phone: e164 } as unknown) as any)
+                .insert({ user_id: user.id, name: appointment.client_name, phone: e164 })
                 .select("id")
                 .single();
 
@@ -591,10 +603,9 @@ const Appointments = () => {
         }
       }
 
-      const updatePayload = ({ status: newStatus, client_id: clientId } as unknown) as any;
       const { error } = await supabase
         .from("appointments")
-        .update(updatePayload)
+        .update({ status: newStatus, client_id: clientId })
         .eq("id", appointment.id);
 
       if (error) throw error;
@@ -681,7 +692,7 @@ const Appointments = () => {
             </Button>
             <Button
               onClick={openNewAppointmentDialog}
-              className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
+              className="hidden md:inline-flex bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
             >
               <Plus className="w-4 h-4 mr-2" />
               Novo Agendamento
@@ -1030,19 +1041,33 @@ const Appointments = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                {selectedAppointment && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => {
+                      setIsDialogOpen(false);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                    className="w-full sm:w-auto"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Remover
+                  </Button>
+                )}
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   disabled={saving || !formData.client_id || !formData.service_id}
-                  className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
+                  className="w-full sm:flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground"
                 >
                   {saving ? "Salvando..." : selectedAppointment ? "Atualizar" : "Agendar"}
                 </Button>
@@ -1072,6 +1097,15 @@ const Appointments = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <button
+          type="button"
+          onClick={openNewAppointmentDialog}
+          className="md:hidden fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors flex items-center justify-center"
+          aria-label="Novo agendamento"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
       </div>
 
       <Dialog open={isAvailabilityDialogOpen} onOpenChange={setIsAvailabilityDialogOpen}>

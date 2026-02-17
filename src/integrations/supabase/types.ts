@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           client_id: string | null
           client_name: string
+          client_phone: string | null
           created_at: string
           date: string
           end_time: string
@@ -34,6 +35,7 @@ export type Database = {
         Insert: {
           client_id?: string | null
           client_name: string
+          client_phone?: string | null
           created_at?: string
           date: string
           end_time: string
@@ -50,6 +52,7 @@ export type Database = {
         Update: {
           client_id?: string | null
           client_name?: string
+          client_phone?: string | null
           created_at?: string
           date?: string
           end_time?: string
@@ -115,6 +118,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          availability: Json | null
           avatar_url: string | null
           booking_slug: string | null
           business_name: string | null
@@ -132,6 +136,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          availability?: Json | null
           avatar_url?: string | null
           booking_slug?: string | null
           business_name?: string | null
@@ -149,6 +154,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          availability?: Json | null
           avatar_url?: string | null
           booking_slug?: string | null
           business_name?: string | null

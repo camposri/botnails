@@ -104,8 +104,20 @@ export default function PublicBooking() {
         return;
       }
 
-      setProfile(profileData);
-      setAvailability(normalizeAvailability((profileData as any)?.availability));
+      const normalizedAvailability = normalizeAvailability(
+        (profileData as { availability?: unknown })?.availability,
+      );
+
+      setProfile({
+        id: profileData.id,
+        user_id: profileData.user_id,
+        full_name: profileData.full_name,
+        business_name: profileData.business_name,
+        phone: profileData.phone,
+        avatar_url: profileData.avatar_url,
+        availability: normalizedAvailability,
+      });
+      setAvailability(normalizedAvailability);
 
       const { data: servicesData, error: servicesError } = await supabase
         .from("services")
@@ -230,14 +242,14 @@ export default function PublicBooking() {
         status: "pending",
       };
 
-      const { error } = await supabase.from("appointments").insert(payload as any);
+      const { error } = await supabase.from("appointments").insert(payload);
 
       if (error) throw error;
 
       setBookingComplete(true);
     } catch (error) {
-      const err: any = error;
-      if (err?.code === "23505") {
+      const err = error as { code?: unknown };
+      if (String(err?.code || "") === "23505") {
         toast({
           title: "Horário indisponível",
           description: "Alguém acabou de agendar este horário. Escolha outro horário disponível.",

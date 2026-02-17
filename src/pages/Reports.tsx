@@ -16,6 +16,7 @@ import {
   Cell,
   Legend,
 } from "recharts";
+import type { TooltipProps } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -143,7 +144,7 @@ const Reports = () => {
   const formatCurrency = (value: number) =>
     `R$ ${value.toFixed(2).replace(".", ",")}`;
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
@@ -162,7 +163,7 @@ const Reports = () => {
     return null;
   };
 
-  const PieTooltip = ({ active, payload }: any) => {
+  const PieTooltip = ({ active, payload }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
