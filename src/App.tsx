@@ -13,6 +13,7 @@ import Appointments from "./pages/Appointments";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 import PublicBooking from "./pages/PublicBooking";
+import ThankYou from "./pages/ThankYou";
 import EmailPending from "./pages/EmailPending";
 import AccessPending from "./pages/AccessPending";
 import AdminPanel from "./pages/AdminPanel";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/book/:slug" element={<PublicBooking />} />
+            <Route path="/obrigado" element={<ThankYou />} />
             <Route path="/email-pending" element={<EmailPending />} />
             <Route path="/access-pending" element={<AccessPending />} />
             <Route path="/dashboard" element={<Dashboard />} />

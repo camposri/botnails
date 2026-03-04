@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTrialStatus } from "@/hooks/useTrialStatus";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import DashboardSidebar from "./DashboardSidebar";
-import TrialBanner from "./TrialBanner";
 import MobileBottomNav from "./MobileBottomNav";
 
 interface DashboardLayoutProps {
@@ -88,7 +87,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <img src="/logo.png" alt="BotNails" className="h-10 w-auto object-contain" />
           <div className="w-10" />
         </div>
-        <TrialBanner />
         {children}
       </main>
       <MobileBottomNav />

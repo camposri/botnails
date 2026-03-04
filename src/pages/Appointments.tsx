@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addMinutes, parseISO, isToday, isTomorrow, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -138,6 +138,9 @@ const Appointments = () => {
   const [availabilitySaving, setAvailabilitySaving] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityConfigV1>(DEFAULT_AVAILABILITY);
 
+  const syncedAppointmentIdsRef = useRef<Set<string>>(new Set());
+  const isSyncingClientsRef = useRef(false);
+
   const [formData, setFormData] = useState<{
     client_id: string;
     service_id: string;
@@ -218,6 +221,71 @@ const Appointments = () => {
         return;
       }
       console.error("Error fetching availability:", error);
+    }
+  };
+
+  const syncPublicBookingsToClients = async (items: Appointment[]) => {
+    if (!user) return;
+    if (isSyncingClientsRef.current) return;
+
+    const candidates = items
+      .filter((a) => !a.client_id)
+      .filter((a) => !!a.client_phone)
+      .filter((a) => isValidMobileBR(String(a.client_phone || "")))
+      .filter((a) => !syncedAppointmentIdsRef.current.has(a.id));
+
+    if (!candidates.length) return;
+
+    isSyncingClientsRef.current = true;
+    let changed = false;
+    try {
+      for (const appointment of candidates) {
+        syncedAppointmentIdsRef.current.add(appointment.id);
+        const normalized = normalizePhoneBR(String(appointment.client_phone || ""));
+        const e164 = normalized?.e164;
+        if (!e164) continue;
+
+        const { data: existingClient, error: clientFindError } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("phone", e164)
+          .maybeSingle();
+
+        if (clientFindError) throw clientFindError;
+
+        let clientId = existingClient?.id || null;
+        if (!clientId) {
+          const { data: newClient, error: clientInsertError } = await supabase
+            .from("clients")
+            .insert(({ user_id: user.id, name: appointment.client_name, phone: e164 } as unknown) as any)
+            .select("id")
+            .single();
+
+          if (clientInsertError) throw clientInsertError;
+          clientId = newClient.id;
+          changed = true;
+        }
+
+        if (clientId) {
+          const { error: appointmentUpdateError } = await supabase
+            .from("appointments")
+            .update(({ client_id: clientId } as unknown) as any)
+            .eq("id", appointment.id);
+
+          if (appointmentUpdateError) throw appointmentUpdateError;
+          changed = true;
+        }
+      }
+    } catch (error) {
+      console.error("Error syncing clients from public bookings:", error);
+    } finally {
+      isSyncingClientsRef.current = false;
+      if (changed) {
+        await fetchData();
+        await fetchAllAppointments();
+        await fetchAppointments();
+      }
     }
   };
 
@@ -358,6 +426,8 @@ const Appointments = () => {
       }));
 
       setAppointments(typedData);
+
+      void syncPublicBookingsToClients(typedData);
     } catch (error) {
       console.error("Error fetching appointments:", error);
     } finally {
@@ -387,6 +457,8 @@ const Appointments = () => {
       }));
 
       setAllAppointments(typedData);
+
+      void syncPublicBookingsToClients(typedData);
     } catch (error) {
       console.error("Error fetching all appointments:", error);
     }

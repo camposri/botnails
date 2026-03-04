@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, isBefore, startOfDay, parse, addMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -56,6 +56,7 @@ const timeSlots = Array.from({ length: 48 }, (_, i) => {
 
 export default function PublicBooking() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
@@ -242,14 +243,34 @@ export default function PublicBooking() {
         status: "pending",
       };
 
-      const { error } = await supabase.from("appointments").insert(payload);
+      let { error } = await supabase.from("appointments").insert(payload as any);
+
+      if (error) {
+        const code = (error as any)?.code;
+        const message = String((error as any)?.message || "");
+        const details = String((error as any)?.details || "");
+        const looksLikeMissingPhoneColumn =
+          code === "42703" ||
+          message.toLowerCase().includes("client_phone") ||
+          details.toLowerCase().includes("client_phone");
+
+        if (looksLikeMissingPhoneColumn) {
+          const payloadWithoutPhone = { ...(payload as any) };
+          delete payloadWithoutPhone.client_phone;
+          ({ error } = await supabase.from("appointments").insert(payloadWithoutPhone));
+        }
+      }
 
       if (error) throw error;
 
       setBookingComplete(true);
     } catch (error) {
-      const err = error as { code?: unknown };
-      if (String(err?.code || "") === "23505") {
+      const err = error as { code?: unknown; message?: unknown; details?: unknown };
+      const code = String(err?.code || "");
+      const message = String(err?.message || "");
+      const details = String(err?.details || "");
+
+      if (code === "23505") {
         toast({
           title: "Horário indisponível",
           description: "Alguém acabou de agendar este horário. Escolha outro horário disponível.",
@@ -257,6 +278,33 @@ export default function PublicBooking() {
         });
         setStep(2);
         await fetchAppointments();
+        return;
+      }
+
+      if (code === "42501" || message.toLowerCase().includes("row-level security")) {
+        toast({
+          title: "Permissão insuficiente",
+          description: "O banco bloqueou este agendamento (políticas de segurança).",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (code === "23503") {
+        toast({
+          title: "Dados inválidos",
+          description: "O serviço selecionado não está disponível. Atualize a página e tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (code === "42703" || message.toLowerCase().includes("client_phone") || details.toLowerCase().includes("client_phone")) {
+        toast({
+          title: "Atualização pendente",
+          description: "O banco precisa ser atualizado para suportar telefone no agendamento.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -349,22 +397,32 @@ export default function PublicBooking() {
                   </span>
                 </div>
               </div>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => {
-                  setBookingComplete(false);
-                  setStep(1);
-                  setSelectedService(null);
-                  setSelectedDate(undefined);
-                  setSelectedTime(null);
-                  setClientName("");
-                  setClientPhone("");
-                  setNotes("");
-                }}
-              >
-                Fazer novo agendamento
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setBookingComplete(false);
+                    setStep(1);
+                    setSelectedService(null);
+                    setSelectedDate(undefined);
+                    setSelectedTime(null);
+                    setClientName("");
+                    setClientPhone("");
+                    setNotes("");
+                  }}
+                >
+                  Fazer novo agendamento
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => navigate(`/obrigado?slug=${encodeURIComponent(String(slug || ""))}`)}
+                >
+                  Sair
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

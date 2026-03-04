@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import TrialBanner from "@/components/dashboard/TrialBanner";
 import StatsCard from "@/components/dashboard/StatsCard";
 import AppointmentCard from "@/components/dashboard/AppointmentCard";
 import { Button } from "@/components/ui/button";
@@ -171,6 +172,7 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6">
+        <TrialBanner />
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-1">
             Olá, {userFirstName}!
